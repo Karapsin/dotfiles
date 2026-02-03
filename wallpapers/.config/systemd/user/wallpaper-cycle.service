@@ -1,0 +1,6 @@
+[Unit]
+Description=Wallpaper cycle (theme+time based)
+
+[Service]
+Type=oneshot
+ExecStart=%h/.wallpapers/bin/wallpaper_cycle.py

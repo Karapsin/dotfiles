@@ -1,0 +1,12 @@
+[Unit]
+Description=Wallpaper schedule (00:00/07:00/12:00/18:00)
+
+[Timer]
+OnCalendar=*-*-* 00:00:00
+OnCalendar=*-*-* 07:00:00
+OnCalendar=*-*-* 12:00:00
+OnCalendar=*-*-* 18:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

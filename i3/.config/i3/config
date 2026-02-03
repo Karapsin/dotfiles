@@ -8,7 +8,6 @@
 # i3 config file (v4)
 #
 # Please see https://i3wm.org/docs/userguide.html for a complete reference!
-
 set $mod Mod4
 
 # Font for window titles. Will also be used by the bar unless a different font
@@ -23,12 +22,15 @@ font pango:monospace 8
 # https://wiki.archlinux.org/index.php/XDG_Autostart
 exec --no-startup-id dex --autostart --environment i3
 
-# The combination of xss-lock, nm-applet and pactl is a popular choice, so
-# they are included here as an example. Modify as you see fit.
+# lockscreen
+exec --no-startup-id bash -lc 'systemctl --user start dunst.service'
+exec --no-startup-id xautolock -time 60 -locker "betterlockscreen -l"
 
-# xss-lock grabs a logind suspend inhibit lock and will use i3lock to lock the
-# screen before suspend. Use loginctl lock-session to lock your screen.
-exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
+# wallpaper
+exec --no-startup-id bash -lc 'feh --bg-fill ~/.lockscreen_wallpaper.png'
+
+# policykit
+exec --no-startup-id /usr/bin/lxqt-policykit-agent
 
 # NetworkManager is the most popular way to manage wireless networks on Linux,
 # and nm-applet is a desktop environment-independent system tray GUI for it.
@@ -36,10 +38,9 @@ exec --no-startup-id nm-applet
 
 # Use pactl to adjust volume in PulseAudio.
 set $refresh_i3status killall -SIGUSR1 i3status
-bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +10% && $refresh_i3status
-bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -10% && $refresh_i3status
-bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
-bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
+bindsym XF86AudioRaiseVolume exec --no-startup-id pamixer --increase 5
+bindsym XF86AudioLowerVolume exec --no-startup-id pamixer --decrease 5
+bindsym XF86AudioMute        exec --no-startup-id pamixer --toggle-mute
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
@@ -49,7 +50,7 @@ floating_modifier $mod
 tiling_drag modifier titlebar
 
 # start a terminal
-bindsym $mod+Return exec i3-sensible-terminal
+bindsym $mod+Return exec alacritty
 
 # kill focused window
 bindsym $mod+Shift+q kill
@@ -87,10 +88,10 @@ bindsym $mod+Shift+Up move up
 bindsym $mod+Shift+Right move right
 
 # split in horizontal orientation
-bindsym $mod+h split h
+bindsym $mod+h split v
 
 # split in vertical orientation
-bindsym $mod+v split v
+bindsym $mod+v split h
 
 # enter fullscreen mode for the focused container
 bindsym $mod+f fullscreen toggle
@@ -156,6 +157,21 @@ bindsym $mod+Shift+r restart
 # exit i3 (logs you out of your X session)
 bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -B 'Yes, exit i3' 'i3-msg exit'"
 
+exec --no-startup-id nm-applet
+
+
+# CUSTOM
+bindsym $mod+Shift+s exec --no-startup-id flameshot gui 
+bindsym Ctrl+Shift+l exec betterlockscreen -l
+bindsym $mod+c exec --no-startup-id google-chrome-stable
+bindsym $mod+g exec --no-startup-id steam
+bindsym $mod+t exec --no-startup-id Telegram
+bindsym $mod+Shift+v exec --no-startup-id nekoray
+bindsym $mod+Mod1+v exec --no-startup-id pavucontrol
+bindsym $mod+Shift+t exec --no-startup-id element-desktop
+bindsym $mod+p exec --no-startup-id positron
+bindsym $mod+Mod1+r exec --no-startup-id rstudio
+
 # resize window (you can also use the mouse for that)
 mode "resize" {
         # These bindings trigger as soon as you enter the resize mode
@@ -183,8 +199,28 @@ mode "resize" {
 
 bindsym $mod+r mode "resize"
 
-# Start i3bar to display a workspace bar (plus the system information i3status
-# finds out, if available)
-bar {
-        status_command i3status
-}
+# CUSTOM
+exec --no-startup-id picom
+#exec_always --no-startup-id ~/.config/i3/restart_monitors.sh
+exec_always --no-startup-id $HOME/.config/polybar/launch.sh restart
+
+# floating
+for_window [class="Yad" title="yad-calendar"] floating enable
+
+# Window colors
+client.focused          #4c7899 #232E3E #ffffff #2e9ef4 #285577
+client.unfocused        #333333 #222222 #888888 #292d3e #222222
+client.focused_inactive #484e50 #5f676a #ffffff #292d3e #5f676a
+client.urgent           #2f343a #900000 #ffffff #900000 #900000
+client.placeholder      #000000 #0c0c0c #ffffff #000000 #0c0c0c
+client.focused          #000000 #142A3A #FFFFFF #000000   #254E6D
+client.focused_inactive #000000 #1D3E56 #FFFFFF #484E50   #5F676A
+client.unfocused        #000000 #222222 #888888 #292D2E   #222222
+client.urgent           #2F343A #700000 #FFFFFF #900000   #900000
+client.placeholder      #000000 #0C0C0C #FFFFFF #000000   #0C0C0C
+
+# Put near the end of ~/.config/i3/config
+for_window [instance="^RAIL$"] move to output HDMI-0, floating enable, sticky disable, focus, move position center
+for_window [class="^RAIL(:.*)?$"] move to output HDMI-0, floating enable, sticky disable, focus, move position center
+
+exec_always --no-startup-id setxkbmap -layout us,ru -option 'grp:alt_shift_toggle'
