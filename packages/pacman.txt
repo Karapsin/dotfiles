@@ -1,0 +1,50 @@
+# Core bootstrap tools
+base-devel
+git
+git-lfs
+stow
+
+# X11 + session
+xorg-server
+xorg-xinit
+xorg-setxkbmap
+xorg-xkbcomp
+xorg-xrandr
+xdotool
+i3-wm
+alacritty
+dmenu
+polybar
+rofi
+dex
+dunst
+picom
+xautolock
+feh
+flameshot
+lxqt-policykit
+networkmanager
+network-manager-applet
+
+# Audio + desktop utilities
+pulseaudio
+pamixer
+pavucontrol
+
+# Script/runtime dependencies used by the repo
+python
+jq
+yad
+
+# Fonts used by polybar
+otf-font-awesome
+ttf-nerd-fonts-symbols
+
+# Desktop applications referenced by i3 bindings
+telegram-desktop
+element-desktop
+steam
+
+# Display manager stack used on this machine
+lightdm
+lightdm-gtk-greeter
