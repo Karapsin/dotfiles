@@ -3,4 +3,5 @@ Description=Copy current wallpaper to /usr/share/backgrounds for LightDM (user %
 
 [Service]
 Type=oneshot
+ExecStartPre=/usr/bin/test -f /home/%i/.wallpapers/current_wallpaper.png
 ExecStart=/usr/bin/install -m 0644 -o root -g root /home/%i/.wallpapers/current_wallpaper.png /usr/share/backgrounds/current_wallpaper.png

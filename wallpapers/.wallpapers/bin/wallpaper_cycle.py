@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import random
@@ -82,15 +83,46 @@ def run(cmd: list[str]) -> None:
     except FileNotFoundError:
         pass
 
-def main() -> int:
-    now = datetime.now()
-    today = date.today().isoformat()
+
+def has_usable_x11_session() -> bool:
+    display = os.environ.get("DISPLAY")
+    xauthority = os.environ.get("XAUTHORITY")
+    if not display or not xauthority:
+        return False
+    if not Path(xauthority).exists():
+        return False
+    try:
+        result = subprocess.run(
+            ["xset", "q"],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return result.returncode == 0
+    except FileNotFoundError:
+        return False
+
+
+def apply_wallpaper(image: Path) -> None:
+    x11_ready = has_usable_x11_session()
+
+    # betterlockscreen shells out to X11 tools; skip it until the session is ready.
+    if x11_ready:
+        run(["betterlockscreen", "-u", str(image)])
+        run(["feh", "--no-fehbg", "--bg-fill", str(image)])
+    else:
+        print("[wallpapers] X11 session not ready; updated current file only")
+
+
+def choose_wallpaper(now: datetime) -> tuple[State, str, Path]:
+    today = now.date().isoformat()
     per = period_now(now)
 
     themes = list_themes()
     if not themes:
-        print(f"[wallpapers] No themes found in {THEMES_DIR} (expected themes/<name>/{'/'.join(PERIODS)}/...)")
-        return 1
+        raise RuntimeError(
+            f"No themes found in {THEMES_DIR} (expected themes/<name>/{'/'.join(PERIODS)}/...)"
+        )
 
     st = load_state(today)
     if st is None:
@@ -105,22 +137,43 @@ def main() -> int:
     folder = theme_dir / per
     imgs = list_images(folder)
     if not imgs:
-        print(f"[wallpapers] No images in {folder}")
-        return 1
+        raise RuntimeError(f"No images in {folder}")
 
     chosen = pick_image(imgs, st.last.get(per))
-    st.last[per] = chosen.name
-    save_state(st)
+    return st, per, chosen
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Rotate and apply wallpapers")
+    parser.add_argument(
+        "--apply-current",
+        action="store_true",
+        help="apply the current wallpaper file without rotating to a new image",
+    )
+    return parser
+
+def main() -> int:
+    args = build_parser().parse_args()
+    now = datetime.now()
+
+    if args.apply_current and CURRENT.exists():
+        apply_wallpaper(CURRENT)
+        print(f"[wallpapers] applied current wallpaper {CURRENT.name}")
+        return 0
+    if args.apply_current:
+        print("[wallpapers] current wallpaper missing; rotating now")
+
+    try:
+        st, per, chosen = choose_wallpaper(now)
+    except RuntimeError as exc:
+        print(f"[wallpapers] {exc}")
+        return 1
 
     BASE.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(chosen, CURRENT)
-
-    # Lock screen cache update (fast lock afterward)
-    run(["betterlockscreen", "-u", str(CURRENT)])
-
-    # Desktop wallpaper (X11): only if running in a session
-    if os.environ.get("DISPLAY"):
-        run(["feh", "--no-fehbg", "--bg-fill", str(CURRENT)])
+    st.last[per] = chosen.name
+    save_state(st)
+    apply_wallpaper(CURRENT)
 
     print(f"[wallpapers] theme={st.theme} period={per} image={chosen.name}")
     return 0

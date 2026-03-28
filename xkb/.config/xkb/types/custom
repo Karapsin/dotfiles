@@ -1,0 +1,21 @@
+partial xkb_types "shortcuts" {
+    type "RU_SHORTCUTS" {
+        modifiers = Shift + Lock + Control;
+        map[None] = Level1;
+        map[Shift] = Level2;
+        map[Lock] = Level2;
+        map[Shift+Lock] = Level1;
+        map[Control] = Level3;
+        map[Control+Shift] = Level4;
+        map[Control+Lock] = Level4;
+        map[Control+Shift+Lock] = Level3;
+        preserve[Control] = Control;
+        preserve[Control+Shift] = Control+Shift;
+        preserve[Control+Lock] = Control+Lock;
+        preserve[Control+Shift+Lock] = Control+Shift+Lock;
+        level_name[Level1] = "Base";
+        level_name[Level2] = "Shift";
+        level_name[Level3] = "Control";
+        level_name[Level4] = "Control+Shift";
+    };
+};

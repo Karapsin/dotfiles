@@ -29,13 +29,16 @@ git -C "$DOTFILES_DIR" lfs pull || true
 echo "[4/6] Deploying dotfiles package via stow..."
 stow -d "$DOTFILES_DIR" -t "$HOME" "$PKG"
 
-echo "[5/6] Enabling user timer..."
+echo "[5/6] Enabling lingering for user timers..."
+sudo loginctl enable-linger "$USER"
+
+echo "[6/6] Enabling user timer..."
 systemctl --user daemon-reload
 systemctl --user enable --now wallpaper-cycle.timer
 systemctl --user start wallpaper-cycle.service || true
 
 if [[ "$WITH_LIGHTDM" -eq 1 ]]; then
-  echo "[6/6] Installing LightDM sync units (system) + setting greeter background..."
+  echo "[7/7] Installing LightDM sync units (system) + setting greeter background..."
   sudo install -d /usr/share/backgrounds
   sudo install -m 0644 "$DOTFILES_DIR/$PKG/etc/systemd/system/wallpaper-login-copy@.service" /etc/systemd/system/
   sudo install -m 0644 "$DOTFILES_DIR/$PKG/etc/systemd/system/wallpaper-login-copy@.timer"   /etc/systemd/system/

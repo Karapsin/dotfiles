@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ -z "${DISPLAY:-}" ]]; then
+  exit 0
+fi
+
+keymap_root="$HOME/.config/xkb"
+keymap_file="$keymap_root/keymap/us-ru-shortcuts"
+
+if command -v xkbcomp >/dev/null 2>&1 && [[ -f "$keymap_file" ]]; then
+  if xkbcomp -w 0 -I"$keymap_root" "$keymap_file" "$DISPLAY"; then
+    exit 0
+  fi
+fi
+
+exec setxkbmap -layout us,ru -option 'grp:alt_shift_toggle'

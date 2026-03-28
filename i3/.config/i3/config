@@ -27,7 +27,7 @@ exec --no-startup-id bash -lc 'systemctl --user start dunst.service'
 exec --no-startup-id xautolock -time 60 -locker "betterlockscreen -l"
 
 # wallpaper
-exec --no-startup-id bash -lc 'feh --bg-fill ~/.lockscreen_wallpaper.png'
+exec --no-startup-id bash -lc 'python3 ~/.wallpapers/bin/wallpaper_cycle.py --apply-current'
 
 # policykit
 exec --no-startup-id /usr/bin/lxqt-policykit-agent
@@ -223,4 +223,4 @@ client.placeholder      #000000 #0C0C0C #FFFFFF #000000   #0C0C0C
 for_window [instance="^RAIL$"] move to output HDMI-0, floating enable, sticky disable, focus, move position center
 for_window [class="^RAIL(:.*)?$"] move to output HDMI-0, floating enable, sticky disable, focus, move position center
 
-exec_always --no-startup-id setxkbmap -layout us,ru -option 'grp:alt_shift_toggle'
+exec_always --no-startup-id $HOME/.local/bin/load-xkb-shortcuts
