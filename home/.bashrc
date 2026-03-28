@@ -9,6 +9,20 @@ alias ls='ls --color=auto'
 alias grep='grep --color=auto'
 PS1='[\u@\h \W]\$ '
 
+up() {
+  yay -Syu "$@"
+}
+
+upcheck() {
+  if command -v checkupdates >/dev/null 2>&1; then
+    checkupdates
+  else
+    echo "checkupdates not installed; showing repo updates from local sync state" >&2
+    pacman -Qu
+  fi
+  yay -Qua
+}
+
 # Created by `pipx` on 2026-02-02 16:56:09
 export PATH="$PATH:/home/kardinal/.local/bin"
 
