@@ -10,7 +10,12 @@ alias grep='grep --color=auto'
 PS1='[\u@\h \W]\$ '
 
 up() {
-  yay -Syu "$@"
+  if command -v yay >/dev/null 2>&1; then
+    yay -Syu "$@"
+  else
+    echo "yay not installed; updating official packages only" >&2
+    sudo pacman -Syu "$@"
+  fi
 }
 
 upcheck() {
@@ -20,17 +25,28 @@ upcheck() {
     echo "checkupdates not installed; showing repo updates from local sync state" >&2
     pacman -Qu
   fi
-  yay -Qua
+  if command -v yay >/dev/null 2>&1; then
+    yay -Qua
+  else
+    echo "yay not installed; skipping AUR update check" >&2
+  fi
 }
 
-# Created by `pipx` on 2026-02-02 16:56:09
-export PATH="$PATH:/home/kardinal/.local/bin"
+_prepend_path() {
+  case ":$PATH:" in
+    *":$1:"*) ;;
+    *) PATH="$1:$PATH" ;;
+  esac
+}
+
+_prepend_path "$HOME/.local/bin"
+_prepend_path "$HOME/bin"
+export PATH
+unset -f _prepend_path
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-export PATH="$HOME/bin:$PATH"
 
 # AI Aliases
 alias ai_chat='~/projects/gemma_host/scripts/chat.sh'
@@ -38,4 +54,3 @@ alias ai_stop='~/projects/gemma_host/scripts/stop_user_server.sh'
 alias ai_start='~/projects/gemma_host/scripts/start_user_server.sh'
 alias ai_restart='ai_stop && ai_start'
 alias ai_agent='~/projects/gemma_host/scripts/pi.sh'
-

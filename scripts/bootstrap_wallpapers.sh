@@ -40,8 +40,8 @@ systemctl --user start wallpaper-cycle.service || true
 if [[ "$WITH_LIGHTDM" -eq 1 ]]; then
   echo "[7/7] Installing LightDM sync units (system) + setting greeter background..."
   sudo install -d /usr/share/backgrounds
-  sudo install -m 0644 "$DOTFILES_DIR/$PKG/etc/systemd/system/wallpaper-login-copy@.service" /etc/systemd/system/
-  sudo install -m 0644 "$DOTFILES_DIR/$PKG/etc/systemd/system/wallpaper-login-copy@.timer"   /etc/systemd/system/
+  sudo install -m 0644 "$DOTFILES_DIR/root/etc/systemd/system/wallpaper-login-copy@.service" /etc/systemd/system/
+  sudo install -m 0644 "$DOTFILES_DIR/root/etc/systemd/system/wallpaper-login-copy@.timer"   /etc/systemd/system/
   sudo systemctl daemon-reload
   sudo systemctl enable --now "wallpaper-login-copy@${USER}.timer"
 

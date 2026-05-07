@@ -27,7 +27,7 @@ sudo ./bootstrap-root.sh --noconfirm --enable-networkmanager --with-lightdm
 
 `bootstrap-root.sh`:
 - installs official packages from [`packages/pacman.txt`](packages/pacman.txt)
-- sets the X11 keyboard baseline to `us,ru` with `Alt+Shift`
+- sets the X11 keyboard baseline to `us,ru` with `Win+Space`
 - enables linger for the target user when possible
 - optionally enables `NetworkManager`
 - optionally installs LightDM packages from [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt) and the wallpaper sync units

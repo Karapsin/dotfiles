@@ -10,6 +10,7 @@ xorg-xinit
 xorg-setxkbmap
 xorg-xkbcomp
 xorg-xrandr
+xorg-xinput
 xorg-xset
 xdotool
 i3-wm
@@ -18,6 +19,7 @@ dmenu
 polybar
 rofi
 dunst
+gsimplecal
 picom
 xss-lock
 feh
@@ -32,11 +34,13 @@ pamixer
 pavucontrol
 pasystray
 blueman
+libnotify
 
 # Script/runtime dependencies used by the repo
 python
 jq
 yad
+github-cli
 
 # Fonts used by polybar
 otf-font-awesome

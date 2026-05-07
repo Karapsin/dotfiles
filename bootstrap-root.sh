@@ -59,7 +59,7 @@ echo "[1/5] Installing official packages..."
 pacman "${PACMAN_ARGS[@]}" "${PACMAN_PACKAGES[@]}"
 
 echo "[2/5] Setting the X11 keyboard baseline..."
-localectl --no-convert set-x11-keymap us,ru pc105+inet "" "grp:alt_shift_toggle,terminate:ctrl_alt_bksp"
+localectl --no-convert set-x11-keymap us,ru pc105+inet "" "grp:win_space_toggle,terminate:ctrl_alt_bksp"
 
 BOOTSTRAP_USER="${SUDO_USER:-${BOOTSTRAP_USER:-}}"
 if [[ -n "$BOOTSTRAP_USER" ]]; then
@@ -86,10 +86,10 @@ if [[ $WITH_LIGHTDM -eq 1 ]]; then
   pacman "${PACMAN_INSTALL_ARGS[@]}" "${LIGHTDM_PACKAGES[@]}"
 
   install -Dm644 \
-    "$DOTFILES_DIR/wallpapers/etc/systemd/system/wallpaper-login-copy@.service" \
+    "$DOTFILES_DIR/root/etc/systemd/system/wallpaper-login-copy@.service" \
     /etc/systemd/system/wallpaper-login-copy@.service
   install -Dm644 \
-    "$DOTFILES_DIR/wallpapers/etc/systemd/system/wallpaper-login-copy@.timer" \
+    "$DOTFILES_DIR/root/etc/systemd/system/wallpaper-login-copy@.timer" \
     /etc/systemd/system/wallpaper-login-copy@.timer
   systemctl daemon-reload
 

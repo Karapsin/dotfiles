@@ -74,6 +74,26 @@ ensure_yay() {
   rm -rf "$tmpdir"
 }
 
+remove_legacy_wallpaper_link() {
+  local link=$1
+  local old_path=$2
+  local target
+
+  [[ -L "$link" ]] || return 0
+  target="$(readlink "$link")"
+  case "$target" in
+    "$old_path"|"$DOTFILES_DIR/$old_path"|*/$old_path)
+      echo "Removing legacy wallpaper Stow link: $link"
+      rm -f "$link"
+      ;;
+  esac
+}
+
+cleanup_legacy_wallpaper_links() {
+  remove_legacy_wallpaper_link "$HOME/etc" "wallpapers/etc"
+  remove_legacy_wallpaper_link "$HOME/bootstrap_wallpapers.sh" "wallpapers/bootstrap_wallpapers.sh"
+}
+
 require_command stow
 
 echo "[1/5] Pulling Git LFS assets (if available)..."
@@ -82,6 +102,7 @@ if command -v git-lfs >/dev/null 2>&1; then
 fi
 
 echo "[2/5] Deploying stow packages..."
+cleanup_legacy_wallpaper_links
 stow -d "$DOTFILES_DIR" -t "$HOME" -R "${STOW_PACKAGES[@]}"
 
 EXPECTED_EXECUTABLES=(
