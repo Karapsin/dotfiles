@@ -31,3 +31,11 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 export PATH="$HOME/bin:$PATH"
+
+# AI Aliases
+alias ai_chat='~/projects/gemma_host/scripts/chat.sh'
+alias ai_stop='~/projects/gemma_host/scripts/stop_user_server.sh'
+alias ai_start='~/projects/gemma_host/scripts/start_user_server.sh'
+alias ai_restart='ai_stop && ai_start'
+alias ai_agent='~/projects/gemma_host/scripts/pi.sh'
+

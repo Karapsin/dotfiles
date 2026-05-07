@@ -104,8 +104,8 @@ bindsym $mod+e layout toggle split
 # toggle tiling / floating
 bindsym $mod+Shift+space floating toggle
 
-# change focus between tiling / floating windows
-bindsym $mod+space focus mode_toggle
+# $mod+space is reserved for keyboard layout switching via XKB.
+# bindsym $mod+space focus mode_toggle
 
 # focus the parent container
 bindsym $mod+a focus parent
@@ -166,7 +166,7 @@ bindsym Ctrl+Shift+l exec betterlockscreen -l
 bindsym $mod+c exec --no-startup-id google-chrome-stable
 bindsym $mod+g exec --no-startup-id steam
 bindsym $mod+t exec --no-startup-id Telegram
-bindsym $mod+Shift+v exec --no-startup-id nekoray
+bindsym $mod+Shift+v exec --no-startup-id /home/kardinal/dotfiles/i3/.config/i3/vpn-control-toggle.sh
 bindsym $mod+Mod1+v exec --no-startup-id pavucontrol
 bindsym $mod+Shift+t exec --no-startup-id element-desktop
 bindsym $mod+p exec --no-startup-id positron
@@ -205,7 +205,7 @@ exec --no-startup-id picom
 exec_always --no-startup-id $HOME/.config/polybar/launch.sh restart
 
 # floating
-for_window [class="Yad" title="yad-calendar"] floating enable
+for_window [class="Gsimplecal"] floating enable, border none, move scratchpad
 
 # Window colors
 client.focused          #4c7899 #232E3E #ffffff #2e9ef4 #285577

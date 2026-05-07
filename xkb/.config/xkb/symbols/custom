@@ -1,6 +1,6 @@
 partial alphanumeric_keys
 xkb_symbols "us_ru_shortcuts" {
-    include "pc+us+ru(winkeys):2+inet(evdev)+group(alt_shift_toggle)"
+    include "pc+us+ru(winkeys):2+inet(evdev)+group(win_space_toggle)"
 
     name[Group1] = "English (US)";
     name[Group2] = "Russian (shortcuts)";

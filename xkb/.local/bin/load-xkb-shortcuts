@@ -15,4 +15,4 @@ if command -v xkbcomp >/dev/null 2>&1 && [[ -f "$keymap_file" ]]; then
   fi
 fi
 
-exec setxkbmap -layout us,ru -option 'grp:alt_shift_toggle'
+exec setxkbmap -layout us,ru -option 'grp:win_space_toggle'
