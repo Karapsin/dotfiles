@@ -93,7 +93,7 @@ PY
           output_height=$9
 
           if pgrep -x gsimplecal >/dev/null 2>&1; then
-            XDG_CONFIG_HOME="$config_home" gsimplecal >/dev/null 2>&1
+            pkill -x gsimplecal >/dev/null 2>&1
             exit 0
           fi
 
@@ -102,6 +102,8 @@ PY
           setsid python3 - "$config_home" "$width" "$height" "$pos_x" "$pos_y" "$output_x" "$output_y" "$output_width" "$output_height" <<'PY' >/dev/null 2>&1 &
 import json
 import os
+import select
+import shutil
 import subprocess
 import sys
 import time
@@ -155,6 +157,11 @@ try:
     subprocess.run(("xdotool", "windowactivate", "--sync", x_window), check=False)
     subprocess.run(("xdotool", "windowraise", x_window), check=False)
 
+    left = int(x)
+    top = int(y)
+    right = left + int(width)
+    bottom = top + int(height)
+
     def pointer_position():
         values = {}
         output = subprocess.check_output(("xdotool", "getmouselocation", "--shell"), text=True)
@@ -167,31 +174,58 @@ try:
 
     def pointer_inside_calendar():
         pointer_x, pointer_y = pointer_position()
-        left = int(x)
-        top = int(y)
-        right = left + int(width)
-        bottom = top + int(height)
         return left <= pointer_x <= right and top <= pointer_y <= bottom
 
-    xinput = subprocess.Popen(
-        ("xinput", "test-xi2", "--root"),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        text=True,
-    )
-
-    armed_at = time.monotonic() + 0.5
-    for line in xinput.stdout:
-        if subprocess.run(
+    def calendar_window_exists():
+        return subprocess.run(
             ("xdotool", "getwindowname", x_window),
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
-        ).returncode != 0:
+        ).returncode == 0
+
+    xinput_command = ("xinput", "test-xi2", "--root")
+    if shutil.which("stdbuf"):
+        xinput_command = ("stdbuf", "-oL", "-eL", *xinput_command)
+
+    xinput = subprocess.Popen(
+        xinput_command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        bufsize=1,
+        text=True,
+    )
+
+    armed = False
+    arm_after = time.monotonic() + 0.08
+    last_window_check = time.monotonic()
+    while True:
+        ready, _, _ = select.select((xinput.stdout,), (), (), 0.25)
+        now = time.monotonic()
+        if not ready:
+            if now - last_window_check >= 0.75:
+                if not calendar_window_exists():
+                    break
+                last_window_check = now
+            continue
+
+        line = xinput.stdout.readline()
+        if not line:
             break
 
-        if time.monotonic() >= armed_at and "RawButtonPress" in line and not pointer_inside_calendar():
-            subprocess.run(("xdotool", "windowclose", x_window), check=False)
+        now = time.monotonic()
+        if not armed and (now >= arm_after or "RawButtonRelease" in line):
+            armed = True
+
+        if armed and "RawButtonPress" in line and not pointer_inside_calendar():
+            subprocess.run(("xdotool", "windowunmap", x_window, "windowclose", x_window), check=False)
             break
+
+        if now - last_window_check < 0.75:
+            continue
+
+        if not calendar_window_exists():
+            break
+        last_window_check = now
 
     xinput.terminate()
 except Exception:
