@@ -9,6 +9,7 @@ fi
 
 DOTFILES_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PACMAN_FILE="$DOTFILES_DIR/packages/pacman.txt"
+LIGHTDM_FILE="$DOTFILES_DIR/packages/pacman-lightdm.txt"
 
 NO_CONFIRM=0
 WITH_LIGHTDM=0
@@ -33,16 +34,25 @@ while (($#)); do
   shift
 done
 
-if [[ ! -f "$PACMAN_FILE" ]]; then
-  echo "Missing package manifest: $PACMAN_FILE" >&2
+read_manifest() {
+  local file=$1
+  [[ -f "$file" ]] || return 0
+  sed -E 's/[[:space:]]+#.*$//; s/#.*$//; /^[[:space:]]*$/d' "$file"
+}
+
+mapfile -t PACMAN_PACKAGES < <(read_manifest "$PACMAN_FILE")
+mapfile -t LIGHTDM_PACKAGES < <(read_manifest "$LIGHTDM_FILE")
+
+if [[ ${#PACMAN_PACKAGES[@]} -eq 0 ]]; then
+  echo "Missing or empty package manifest: $PACMAN_FILE" >&2
   exit 1
 fi
 
-mapfile -t PACMAN_PACKAGES < <(sed -E 's/[[:space:]]+#.*$//; s/#.*$//; /^[[:space:]]*$/d' "$PACMAN_FILE")
-
 PACMAN_ARGS=(-Syu --needed)
+PACMAN_INSTALL_ARGS=(-S --needed)
 if [[ $NO_CONFIRM -eq 1 ]]; then
   PACMAN_ARGS+=(--noconfirm)
+  PACMAN_INSTALL_ARGS+=(--noconfirm)
 fi
 
 echo "[1/5] Installing official packages..."
@@ -67,7 +77,14 @@ else
 fi
 
 if [[ $WITH_LIGHTDM -eq 1 ]]; then
-  echo "[5/5] Installing LightDM wallpaper sync units..."
+  if [[ ${#LIGHTDM_PACKAGES[@]} -eq 0 ]]; then
+    echo "Missing or empty LightDM package manifest: $LIGHTDM_FILE" >&2
+    exit 1
+  fi
+
+  echo "[5/5] Installing LightDM packages and wallpaper sync units..."
+  pacman "${PACMAN_INSTALL_ARGS[@]}" "${LIGHTDM_PACKAGES[@]}"
+
   install -Dm644 \
     "$DOTFILES_DIR/wallpapers/etc/systemd/system/wallpaper-login-copy@.service" \
     /etc/systemd/system/wallpaper-login-copy@.service

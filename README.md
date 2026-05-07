@@ -2,12 +2,7 @@
 
 This repo is organized as GNU Stow packages and a small bootstrap flow for fresh Arch installs.
 
-Managed packages currently used for the desktop:
-- `home`
-- `i3`
-- `polybar`
-- `wallpapers`
-- `xkb`
+Managed Stow packages are listed in [`packages/stow.txt`](packages/stow.txt).
 
 ## Fresh Install
 
@@ -35,11 +30,11 @@ sudo ./bootstrap-root.sh --noconfirm --enable-networkmanager --with-lightdm
 - sets the X11 keyboard baseline to `us,ru` with `Alt+Shift`
 - enables linger for the target user when possible
 - optionally enables `NetworkManager`
-- optionally installs the LightDM wallpaper sync units
+- optionally installs LightDM packages from [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt) and the wallpaper sync units
 
 `bootstrap-user.sh`:
 - pulls Git LFS assets when `git-lfs` is installed
-- stows `home`, `i3`, `polybar`, `wallpapers`, and `xkb`
+- stows packages from [`packages/stow.txt`](packages/stow.txt)
 - bootstraps `yay` if needed
 - installs AUR packages from [`packages/aur.txt`](packages/aur.txt)
 - enables the wallpaper timer
@@ -60,4 +55,6 @@ Those should be restored separately after bootstrap.
 
 Edit these manifests to match the machine you want to rebuild:
 - [`packages/pacman.txt`](packages/pacman.txt)
+- [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt)
 - [`packages/aur.txt`](packages/aur.txt)
+- [`packages/stow.txt`](packages/stow.txt)

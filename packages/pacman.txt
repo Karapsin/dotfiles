@@ -10,16 +10,16 @@ xorg-xinit
 xorg-setxkbmap
 xorg-xkbcomp
 xorg-xrandr
+xorg-xset
 xdotool
 i3-wm
 alacritty
 dmenu
 polybar
 rofi
-dex
 dunst
 picom
-xautolock
+xss-lock
 feh
 flameshot
 lxqt-policykit
@@ -30,6 +30,8 @@ network-manager-applet
 pulseaudio
 pamixer
 pavucontrol
+pasystray
+blueman
 
 # Script/runtime dependencies used by the repo
 python
@@ -44,7 +46,3 @@ ttf-nerd-fonts-symbols
 telegram-desktop
 element-desktop
 steam
-
-# Display manager stack used on this machine
-lightdm
-lightdm-gtk-greeter

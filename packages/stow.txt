@@ -1,0 +1,8 @@
+# GNU Stow packages deployed by bootstrap-user.sh
+home
+i3
+polybar
+wallpapers
+xkb
+gsimplecal
+picom

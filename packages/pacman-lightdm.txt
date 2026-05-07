@@ -1,0 +1,3 @@
+# Optional display manager stack
+lightdm
+lightdm-gtk-greeter
