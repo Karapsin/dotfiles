@@ -6,3 +6,5 @@ wallpapers
 xkb
 gsimplecal
 picom
+rofi
+dunst

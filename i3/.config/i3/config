@@ -19,6 +19,7 @@ set $ws10 "10"
 font pango:monospace 8
 floating_modifier $mod
 tiling_drag modifier titlebar
+hide_edge_borders smart
 
 # Autostart
 exec --no-startup-id $i3dir/session-start.sh
@@ -54,14 +55,14 @@ bindsym $mod+p exec --no-startup-id positron
 bindsym $mod+Mod1+r exec --no-startup-id rstudio
 
 # Focus
-bindsym $mod+j focus left
-bindsym $mod+k focus down
-bindsym $mod+l focus up
-bindsym $mod+semicolon focus right
-bindsym $mod+Left focus left
-bindsym $mod+Down focus down
-bindsym $mod+Up focus up
-bindsym $mod+Right focus right
+bindsym $mod+j exec --no-startup-id $i3dir/focus-visual.py left
+bindsym $mod+k exec --no-startup-id $i3dir/focus-visual.py down
+bindsym $mod+l exec --no-startup-id $i3dir/focus-visual.py up
+bindsym $mod+semicolon exec --no-startup-id $i3dir/focus-visual.py right
+bindsym $mod+Left exec --no-startup-id $i3dir/focus-visual.py left
+bindsym $mod+Down exec --no-startup-id $i3dir/focus-visual.py down
+bindsym $mod+Up exec --no-startup-id $i3dir/focus-visual.py up
+bindsym $mod+Right exec --no-startup-id $i3dir/focus-visual.py right
 
 # Move windows
 bindsym $mod+Shift+j move left
@@ -131,7 +132,7 @@ for_window [instance="^RAIL$"] move to output $rail_output, floating enable, sti
 for_window [class="^RAIL(:.*)?$"] move to output $rail_output, floating enable, sticky disable, focus, move position center
 
 # Window colors
-client.focused          #000000 #23516F #FFFFFF #000000 #3A78A2
+client.focused          #000000 #173348 #FFFFFF #000000 #244B67
 client.focused_inactive #000000 #242A30 #C8CED3 #30363C #30363C
 client.unfocused        #000000 #222222 #888888 #292D2E #222222
 client.urgent           #2F343A #700000 #FFFFFF #900000 #900000

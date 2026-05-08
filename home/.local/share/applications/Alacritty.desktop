@@ -1,0 +1,18 @@
+[Desktop Entry]
+Type=Application
+TryExec=i3-terminal
+Exec=i3-terminal
+Icon=Alacritty
+Terminal=false
+Categories=System;TerminalEmulator;
+
+Name=Alacritty
+GenericName=Terminal
+Comment=A fast, cross-platform, OpenGL terminal emulator
+StartupNotify=false
+StartupWMClass=Alacritty
+Actions=New;
+
+[Desktop Action New]
+Name=New Terminal
+Exec=i3-terminal

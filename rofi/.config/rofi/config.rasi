@@ -1,0 +1,18 @@
+configuration {
+    modes: "drun,run,window";
+    font: "Noto Sans 11";
+    show-icons: true;
+    icon-theme: "Adwaita";
+    terminal: "i3-terminal";
+    drun-display-format: "{name}";
+    drun-reload-desktop-cache: true;
+    matching: "normal";
+    case-smart: true;
+    sort: true;
+    fixed-num-lines: true;
+    cycle: true;
+    sidebar-mode: false;
+    location: 0;
+}
+
+@theme "theme"
