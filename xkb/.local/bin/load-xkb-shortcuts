@@ -9,10 +9,14 @@ fi
 keymap_root="$HOME/.config/xkb"
 keymap_file="$keymap_root/keymap/us-ru-shortcuts"
 
+if command -v setxkbmap >/dev/null 2>&1; then
+  setxkbmap -layout us,ru -option -option 'grp:win_space_toggle' -option 'terminate:ctrl_alt_bksp'
+fi
+
 if command -v xkbcomp >/dev/null 2>&1 && [[ -f "$keymap_file" ]]; then
   if xkbcomp -w 0 -I"$keymap_root" "$keymap_file" "$DISPLAY"; then
     exit 0
   fi
 fi
 
-exec setxkbmap -layout us,ru -option 'grp:win_space_toggle'
+exit 0

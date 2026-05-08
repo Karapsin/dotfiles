@@ -36,8 +36,9 @@ bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'Exit i3 and end this X sessi
 bindsym $mod+Shift+q kill
 
 # Launchers
-bindsym $mod+Return exec --no-startup-id alacritty
-bindsym $mod+d exec --no-startup-id rofi -show drun
+bindcode $mod+36 fullscreen disable; exec --no-startup-id $i3dir/launch-terminal.sh
+bindcode $mod+104 fullscreen disable; exec --no-startup-id $i3dir/launch-terminal.sh
+bindsym $mod+d fullscreen disable; exec --no-startup-id rofi -show drun
 # bindsym $mod+d exec --no-startup-id dmenu_run
 
 bindsym $mod+Shift+s exec --no-startup-id flameshot gui
@@ -130,8 +131,8 @@ for_window [instance="^RAIL$"] move to output $rail_output, floating enable, sti
 for_window [class="^RAIL(:.*)?$"] move to output $rail_output, floating enable, sticky disable, focus, move position center
 
 # Window colors
-client.focused          #000000 #142A3A #FFFFFF #000000 #254E6D
-client.focused_inactive #000000 #1D3E56 #FFFFFF #484E50 #5F676A
+client.focused          #000000 #23516F #FFFFFF #000000 #3A78A2
+client.focused_inactive #000000 #242A30 #C8CED3 #30363C #30363C
 client.unfocused        #000000 #222222 #888888 #292D2E #222222
 client.urgent           #2F343A #700000 #FFFFFF #900000 #900000
 client.placeholder      #000000 #0C0C0C #FFFFFF #000000 #0C0C0C

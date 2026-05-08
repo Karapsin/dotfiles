@@ -3,6 +3,10 @@
 user_id=$(id -u)
 i3_dir="${0%/*}"
 
+if command -v xrdb >/dev/null 2>&1 && [ -f "$HOME/.Xresources" ]; then
+  xrdb -merge "$HOME/.Xresources" >/dev/null 2>&1 || true
+fi
+
 start_detached() {
   if command -v setsid >/dev/null 2>&1; then
     setsid -f "$@" >/dev/null 2>&1

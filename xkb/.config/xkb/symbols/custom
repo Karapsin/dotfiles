@@ -2,8 +2,8 @@ partial alphanumeric_keys
 xkb_symbols "us_ru_shortcuts" {
     include "pc+us+ru(winkeys):2+inet(evdev)+group(win_space_toggle)"
 
-    name[Group1] = "English (US)";
-    name[Group2] = "Russian (shortcuts)";
+    name[Group1] = "us";
+    name[Group2] = "ru";
 
     key <TLDE> { type[Group2] = "RU_SHORTCUTS", symbols[Group2] = [         Cyrillic_io,         Cyrillic_IO,       grave,    asciitilde ] };
 

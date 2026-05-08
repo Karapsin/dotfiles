@@ -11,6 +11,7 @@ xorg-setxkbmap
 xorg-xkbcomp
 xorg-xrandr
 xorg-xinput
+xorg-xrdb
 xorg-xset
 xdotool
 i3-wm
@@ -42,7 +43,11 @@ jq
 yad
 github-cli
 
-# Fonts used by polybar
+# Fonts used by desktop UI and polybar
+noto-fonts
+noto-fonts-emoji
+ttf-dejavu
+ttf-liberation
 otf-font-awesome
 ttf-nerd-fonts-symbols
 
