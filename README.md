@@ -23,6 +23,28 @@ sudo ./bootstrap-root.sh --noconfirm --enable-networkmanager --with-lightdm
 ./bootstrap-user.sh --noconfirm
 ```
 
+## New User On An Existing Machine
+
+Use the light user bootstrap when the machine already has the system packages,
+services, and desktop baseline from `bootstrap-root.sh`, and you only want to
+apply this repo for another local user:
+
+```bash
+git clone /path/to/your/repo ~/dotfiles
+cd ~/dotfiles
+./bootstrap-user-light.sh
+```
+
+It does not install pacman or AUR packages. Existing target files, such as a
+fresh user's default `~/.bashrc`, are moved into
+`~/.dotfiles-bootstrap-backup/<timestamp>/` before Stow runs.
+
+For per-user system integration on the configured machine:
+
+```bash
+./bootstrap-user-light.sh --enable-linger --enable-login-wallpaper
+```
+
 ## What The Scripts Do
 
 `bootstrap-root.sh`:
@@ -38,6 +60,15 @@ sudo ./bootstrap-root.sh --noconfirm --enable-networkmanager --with-lightdm
 - bootstraps `yay` if needed
 - installs AUR packages from [`packages/aur.txt`](packages/aur.txt)
 - enables the wallpaper timer
+- applies the custom XKB map immediately
+
+`bootstrap-user-light.sh`:
+- backs up unmanaged target files that would conflict with Stow links
+- pulls Git LFS assets when `git-lfs` is installed
+- stows packages from [`packages/stow.txt`](packages/stow.txt)
+- verifies executable bits for scripts used by the desktop config
+- enables the wallpaper timer when the user systemd manager is available
+- optionally enables linger and the LightDM wallpaper sync timer for the user
 - applies the custom XKB map immediately
 
 ## Secrets And Machine-Specific State

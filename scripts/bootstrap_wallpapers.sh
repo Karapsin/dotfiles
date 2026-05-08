@@ -27,14 +27,53 @@ echo "[3/6] Pulling Git LFS files (images)..."
 git -C "$DOTFILES_DIR" lfs pull || true
 
 echo "[4/6] Deploying dotfiles package via stow..."
-stow -d "$DOTFILES_DIR" -t "$HOME" "$PKG"
+stow --no-folding -d "$DOTFILES_DIR" -t "$HOME" "$PKG"
+CURRENT="$HOME/.wallpapers/current_wallpaper.png"
+STATE_FILE="$HOME/.wallpapers/state/state.json"
+mkdir -p -- "$HOME/.wallpapers/state"
+if [[ -L "$CURRENT" ]]; then
+  CURRENT_SOURCE="$(readlink -f -- "$CURRENT" 2>/dev/null || true)"
+  rm -f -- "$CURRENT"
+  if [[ -n "$CURRENT_SOURCE" && -f "$CURRENT_SOURCE" ]]; then
+    cp -- "$CURRENT_SOURCE" "$CURRENT"
+  fi
+fi
+if [[ -L "$STATE_FILE" ]]; then
+  STATE_SOURCE="$(readlink -f -- "$STATE_FILE" 2>/dev/null || true)"
+  rm -f -- "$STATE_FILE"
+  if [[ -n "$STATE_SOURCE" && -f "$STATE_SOURCE" ]]; then
+    cp -- "$STATE_SOURCE" "$STATE_FILE"
+  fi
+fi
+if [[ ! -e "$CURRENT" && -f "$DOTFILES_DIR/wallpapers/.wallpapers/current_wallpaper.png" ]]; then
+  cp -- "$DOTFILES_DIR/wallpapers/.wallpapers/current_wallpaper.png" "$CURRENT"
+fi
+if [[ ! -e "$STATE_FILE" ]]; then
+  if [[ -f "$DOTFILES_DIR/wallpapers/.wallpapers/state/state.json" ]]; then
+    cp -- "$DOTFILES_DIR/wallpapers/.wallpapers/state/state.json" "$STATE_FILE"
+  else
+    printf '{}\n' > "$STATE_FILE"
+  fi
+fi
 
 echo "[5/6] Enabling lingering for user timers..."
 sudo loginctl enable-linger "$USER"
 
 echo "[6/6] Enabling user timer..."
+WANTS_DIR="$HOME/.config/systemd/user/timers.target.wants"
+WANTS_LINK="$WANTS_DIR/wallpaper-cycle.timer"
+if [[ -L "$WANTS_DIR" && ! -e "$WANTS_DIR" ]]; then
+  echo "Removing stale user timer directory link: $WANTS_DIR"
+  rm -f -- "$WANTS_DIR"
+fi
+if [[ -L "$WANTS_LINK" && ! -e "$WANTS_LINK" ]]; then
+  echo "Removing stale user timer link: $WANTS_LINK"
+  rm -f -- "$WANTS_LINK"
+fi
+mkdir -p -- "$WANTS_DIR"
 systemctl --user daemon-reload
-systemctl --user enable --now wallpaper-cycle.timer
+systemctl --user enable wallpaper-cycle.timer
+systemctl --user start wallpaper-cycle.timer
 systemctl --user start wallpaper-cycle.service || true
 
 if [[ "$WITH_LIGHTDM" -eq 1 ]]; then

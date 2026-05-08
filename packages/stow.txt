@@ -1,4 +1,4 @@
-# GNU Stow packages deployed by bootstrap-user.sh
+# GNU Stow packages deployed by the user bootstrap scripts
 home
 i3
 polybar

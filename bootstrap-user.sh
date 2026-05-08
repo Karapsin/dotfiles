@@ -44,6 +44,99 @@ require_command() {
   fi
 }
 
+is_git_worktree() {
+  git -C "$DOTFILES_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1
+}
+
+pull_lfs_assets() {
+  if ! command -v git >/dev/null 2>&1; then
+    echo "Skipping Git LFS pull: git is unavailable."
+  elif ! is_git_worktree; then
+    echo "Skipping Git LFS pull: $DOTFILES_DIR is not a Git repository."
+  elif command -v git-lfs >/dev/null 2>&1; then
+    git -C "$DOTFILES_DIR" lfs pull || true
+  else
+    echo "Skipping Git LFS pull: git-lfs is unavailable."
+  fi
+}
+
+ensure_executable() {
+  local executable=$1
+
+  if [[ -x "$executable" ]]; then
+    return 0
+  fi
+
+  if [[ ! -e "$executable" ]]; then
+    echo "Expected script missing after stow: $executable" >&2
+    return 1
+  fi
+
+  if chmod +x "$executable" 2>/dev/null; then
+    return 0
+  fi
+
+  echo "Expected script is not executable and could not be fixed: $executable" >&2
+  echo "The Stow target may point into a dotfiles checkout owned by another user." >&2
+  return 1
+}
+
+copy_link_target_locally() {
+  local path=$1
+  local source
+
+  [[ -L "$path" ]] || return 0
+
+  source="$(readlink -f -- "$path" 2>/dev/null || true)"
+  rm -f -- "$path"
+
+  if [[ -n "$source" && -f "$source" ]]; then
+    cp -- "$source" "$path"
+  fi
+}
+
+prepare_wallpaper_state() {
+  local current="$HOME/.wallpapers/current_wallpaper.png"
+  local state_file="$HOME/.wallpapers/state/state.json"
+  local current_source="$DOTFILES_DIR/wallpapers/.wallpapers/current_wallpaper.png"
+  local state_source="$DOTFILES_DIR/wallpapers/.wallpapers/state/state.json"
+
+  mkdir -p -- "$HOME/.wallpapers/state"
+  copy_link_target_locally "$current"
+  copy_link_target_locally "$state_file"
+
+  if [[ ! -e "$current" && -f "$current_source" ]]; then
+    cp -- "$current_source" "$current"
+  fi
+  if [[ ! -e "$state_file" ]]; then
+    if [[ -f "$state_source" ]]; then
+      cp -- "$state_source" "$state_file"
+    else
+      printf '{}\n' > "$state_file"
+    fi
+  fi
+}
+
+enable_wallpaper_timer() {
+  local wants_dir="$HOME/.config/systemd/user/timers.target.wants"
+  local wants_link="$wants_dir/wallpaper-cycle.timer"
+
+  if [[ -L "$wants_dir" && ! -e "$wants_dir" ]]; then
+    echo "Removing stale user timer directory link: $wants_dir"
+    rm -f -- "$wants_dir"
+  fi
+  if [[ -L "$wants_link" && ! -e "$wants_link" ]]; then
+    echo "Removing stale user timer link: $wants_link"
+    rm -f -- "$wants_link"
+  fi
+
+  mkdir -p -- "$wants_dir"
+  systemctl --user daemon-reload
+  systemctl --user enable wallpaper-cycle.timer
+  systemctl --user start wallpaper-cycle.timer
+  systemctl --user start wallpaper-cycle.service || true
+}
+
 mapfile -t STOW_PACKAGES < <(read_manifest "$STOW_FILE")
 mapfile -t AUR_PACKAGES < <(read_manifest "$AUR_FILE")
 
@@ -97,13 +190,12 @@ cleanup_legacy_wallpaper_links() {
 require_command stow
 
 echo "[1/5] Pulling Git LFS assets (if available)..."
-if command -v git-lfs >/dev/null 2>&1; then
-  git -C "$DOTFILES_DIR" lfs pull || true
-fi
+pull_lfs_assets
 
 echo "[2/5] Deploying stow packages..."
 cleanup_legacy_wallpaper_links
-stow -d "$DOTFILES_DIR" -t "$HOME" -R "${STOW_PACKAGES[@]}"
+stow --no-folding -d "$DOTFILES_DIR" -t "$HOME" -R "${STOW_PACKAGES[@]}"
+prepare_wallpaper_state
 
 EXPECTED_EXECUTABLES=(
   "$HOME/.config/i3/blueman-launch.sh"
@@ -116,10 +208,7 @@ EXPECTED_EXECUTABLES=(
 
 missing_executable=0
 for executable in "${EXPECTED_EXECUTABLES[@]}"; do
-  if [[ -e "$executable" ]]; then
-    chmod +x "$executable"
-  else
-    echo "Expected script missing after stow: $executable" >&2
+  if ! ensure_executable "$executable"; then
     missing_executable=1
   fi
 done
@@ -142,12 +231,10 @@ fi
 
 echo "[4/5] Enabling user services..."
 if systemctl --user show-environment >/dev/null 2>&1; then
-  systemctl --user daemon-reload
-  systemctl --user enable --now wallpaper-cycle.timer
-  systemctl --user start wallpaper-cycle.service || true
+  enable_wallpaper_timer
 else
   echo "Skipping user systemd setup: user manager is unavailable."
-  echo "Run later: systemctl --user daemon-reload && systemctl --user enable --now wallpaper-cycle.timer"
+  echo "Run later: systemctl --user daemon-reload && systemctl --user enable wallpaper-cycle.timer && systemctl --user start wallpaper-cycle.timer"
 fi
 
 echo "[5/5] Applying the custom XKB map..."

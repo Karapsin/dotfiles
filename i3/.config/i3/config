@@ -22,6 +22,7 @@ tiling_drag modifier titlebar
 hide_edge_borders smart
 
 # Autostart
+exec_always --no-startup-id xrandr --output DP-0 --mode 2560x1440 --rate 143.97
 exec --no-startup-id $i3dir/session-start.sh
 exec --no-startup-id $HOME/.config/polybar/launch.sh restart
 exec_always --no-startup-id $HOME/.local/bin/load-xkb-shortcuts
@@ -43,7 +44,7 @@ bindsym $mod+d fullscreen disable; exec --no-startup-id rofi -show drun
 # bindsym $mod+d exec --no-startup-id dmenu_run
 
 bindsym $mod+Shift+s exec --no-startup-id flameshot gui
-bindsym Ctrl+Shift+l exec --no-startup-id betterlockscreen -l
+bindsym $mod+Shift+l exec --no-startup-id betterlockscreen -l
 bindsym $mod+c exec --no-startup-id google-chrome-stable
 bindsym $mod+g exec --no-startup-id steam
 bindsym $mod+t exec --no-startup-id Telegram
@@ -67,7 +68,6 @@ bindsym $mod+Right exec --no-startup-id $i3dir/focus-visual.py right
 # Move windows
 bindsym $mod+Shift+j move left
 bindsym $mod+Shift+k move down
-bindsym $mod+Shift+l move up
 bindsym $mod+Shift+semicolon move right
 bindsym $mod+Shift+Left move left
 bindsym $mod+Shift+Down move down
