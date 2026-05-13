@@ -2,6 +2,21 @@
 
 set -euo pipefail
 
+warm_color="#F0C674"
+hot_color="#A54242"
+
+format_temperature() {
+  local temperature=$1
+
+  if ((temperature >= 55)); then
+    printf '%%{F%s}%s°C%%{F-}' "$hot_color" "$temperature"
+  elif ((temperature >= 50)); then
+    printf '%%{F%s}%s°C%%{F-}' "$warm_color" "$temperature"
+  else
+    printf '%s°C' "$temperature"
+  fi
+}
+
 usage="$(
   awk '
     /^MemTotal:/ { total = $2 }
@@ -46,7 +61,7 @@ temperature="$(
 )" || temperature=
 
 if [[ -n "$usage" && -n "$temperature" ]]; then
-  printf '%s%% (%s°C)\n' "$usage" "$temperature"
+  printf '%s%% (%s)\n' "$usage" "$(format_temperature "$temperature")"
 elif [[ -n "$usage" ]]; then
   printf '%s%%\n' "$usage"
 else

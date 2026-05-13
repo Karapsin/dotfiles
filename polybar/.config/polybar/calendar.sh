@@ -7,35 +7,141 @@ case "$1" in
         geometry="$(python3 - <<'PY' 2>/dev/null
 import json
 import os
+import shutil
 import subprocess
+import tempfile
+from datetime import datetime
 from pathlib import Path
 
 
 def i3_json(*args):
     return json.loads(subprocess.check_output(("i3-msg", "-t", *args), text=True))
 
-try:
-    workspaces = i3_json("get_workspaces")
-    workspace = next((w for w in workspaces if w.get("focused")), None)
-    if not workspace:
-        raise SystemExit
 
-    rect = workspace["rect"]
-    output_rect = rect
-    for output in i3_json("get_outputs"):
-        if output.get("name") == workspace.get("output"):
-            output_rect = output.get("rect", rect)
+def pointer_position(rect):
+    try:
+        values = {}
+        output = subprocess.check_output(("xdotool", "getmouselocation", "--shell"), text=True)
+        for line in output.splitlines():
+            if "=" in line:
+                key, value = line.split("=", 1)
+                values[key] = value
+
+        return int(values["X"]), int(values["Y"])
+    except Exception:
+        return rect["x"] + rect["width"], rect["y"] + rect["height"]
+
+
+def estimated_size(rect, state_file):
+    for path in state_file:
+        try:
+            cached = json.loads(path.read_text())
+            width = int(cached.get("width", 0))
+            height = int(cached.get("height", 0))
+            if 0 < width < rect["width"] and 0 < height < rect["height"]:
+                return width, height
+        except Exception:
+            pass
+
+    return round(rect["width"] * 0.092), round(rect["height"] * 0.124)
+
+
+def safe_name(value):
+    return "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in value or "default")
+
+
+def polybar_font_description():
+    font = os.environ.get(
+        "POLYBAR_FONT_0",
+        "Noto Sans Mono,Liberation Mono,DejaVu Sans Mono:size=11;2",
+    )
+    family, _, options = font.partition(":")
+    family = family.split(",", 1)[0].strip() or "monospace"
+    size = "11"
+    for option in options.split(":"):
+        if option.startswith("size="):
+            size = option.split("=", 1)[1].split(";", 1)[0]
             break
 
-    width = round(rect["width"] * 0.115)
-    height = round(rect["height"] * 0.150)
-    margin = round(rect["width"] * 0.006)
-    gap = round(rect["height"] * 0.008)
+    return f"{family} {size}"
 
-    x = rect["x"] + rect["width"] - width - margin
-    y = rect["y"] + rect["height"] - height - gap
+
+def measure_text_width(text, rect, dpi):
+    fallback_char_width = max(1, round(rect["height"] * 0.007))
+    fallback = len(text) * fallback_char_width
+    if not shutil.which("pango-view") or not shutil.which("identify"):
+        return fallback
+
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(prefix="polybar-calendar-", suffix=".png", delete=False) as temp:
+            temp_path = temp.name
+
+        subprocess.run(
+            (
+                "pango-view",
+                "--no-display",
+                f"--dpi={dpi}",
+                f"--font={polybar_font_description()}",
+                "--margin=0",
+                f"--text={text}",
+                f"--output={temp_path}",
+            ),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True,
+        )
+        width = int(subprocess.check_output(("identify", "-format", "%w", temp_path), text=True))
+        return width if width > 0 else fallback
+    except Exception:
+        return fallback
+    finally:
+        if temp_path:
+            try:
+                Path(temp_path).unlink()
+            except Exception:
+                pass
+
+
+try:
+    workspaces = i3_json("get_workspaces")
+    focused_workspace = next((w for w in workspaces if w.get("focused")), None)
+    if not focused_workspace:
+        raise SystemExit
+
+    pointer_x, pointer_y = pointer_position(focused_workspace["rect"])
+    output_name = None
+    for output in i3_json("get_outputs"):
+        if not output.get("active", True):
+            continue
+
+        output_rect = output.get("rect") or {}
+        if (
+            output_rect.get("x", 0) <= pointer_x < output_rect.get("x", 0) + output_rect.get("width", 0)
+            and output_rect.get("y", 0) <= pointer_y < output_rect.get("y", 0) + output_rect.get("height", 0)
+        ):
+            output_name = output.get("name")
+            break
+
+    workspace = next(
+        (w for w in workspaces if w.get("visible") and w.get("output") == output_name),
+        focused_workspace,
+    )
+    rect = workspace["rect"]
+    margin = round(rect["width"] * 0.006)
+    gap = round(rect["height"] * 0.006)
 
     config_home = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "gsimplecal-polybar"
+    state_file = config_home / f"last-size-{safe_name(workspace.get('output'))}.json"
+    width, height = estimated_size(rect, (state_file, config_home / "last-size.json"))
+
+    date_text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    dpi = int(os.environ.get("POLYBAR_DPI", "96") or "96")
+    date_width = measure_text_width(date_text, rect, dpi)
+    char_width = max(1, round(date_width / max(1, len(date_text))))
+    padding_right = int(os.environ.get("POLYBAR_PADDING_RIGHT", "1") or "1") * char_width
+    date_center = rect["x"] + rect["width"] - padding_right - round(date_width / 2)
+
     config_dir = config_home / "gsimplecal"
     config_dir.mkdir(parents=True, exist_ok=True)
     (config_dir / "config").write_text(
@@ -62,14 +168,17 @@ try:
 
     print(
         config_home,
+        state_file,
+        workspace.get("output", output_name or ""),
+        rect["x"],
+        rect["y"],
+        rect["width"],
+        rect["height"],
+        margin,
+        gap,
+        date_center,
         width,
         height,
-        x,
-        y,
-        output_rect["x"],
-        output_rect["y"],
-        output_rect["width"],
-        output_rect["height"],
     )
 except Exception:
     raise SystemExit(1)
@@ -78,14 +187,17 @@ PY
         if [ -n "$geometry" ]; then
           set -- $geometry
           config_home=$1
-          width=$2
-          height=$3
-          pos_x=$4
-          pos_y=$5
-          output_x=$6
-          output_y=$7
-          output_width=$8
-          output_height=$9
+          state_file=$2
+          output_name=$3
+          workspace_x=$4
+          workspace_y=$5
+          workspace_width=$6
+          workspace_height=$7
+          margin=$8
+          gap=$9
+          date_center=${10}
+          width=${11}
+          height=${12}
 
           if pgrep -x gsimplecal >/dev/null 2>&1; then
             pkill -x gsimplecal >/dev/null 2>&1
@@ -94,14 +206,14 @@ PY
 
           setsid env XDG_CONFIG_HOME="$config_home" gsimplecal >/dev/null 2>&1 &
 
-          setsid python3 - "$config_home" "$width" "$height" "$pos_x" "$pos_y" "$output_x" "$output_y" "$output_width" "$output_height" <<'PY' >/dev/null 2>&1 &
+          setsid python3 - "$config_home" "$state_file" "$output_name" "$workspace_x" "$workspace_y" "$workspace_width" "$workspace_height" "$margin" "$gap" "$date_center" "$width" "$height" <<'PY' >/dev/null 2>&1 &
 import json
-import os
 import select
 import shutil
 import subprocess
 import sys
 import time
+from pathlib import Path
 
 
 def i3_json(*args):
@@ -122,8 +234,60 @@ def find_gsimplecal(node):
     return None
 
 
+def centered_on(origin, size, window_size, center, margin):
+    minimum = origin + margin
+    maximum = origin + size - window_size - margin
+    if maximum >= minimum:
+        return max(minimum, min(center - round(window_size / 2), maximum))
+
+    return origin + max(0, (size - window_size) // 2)
+
+
+def read_window_rect(fallback_window):
+    for _ in range(12):
+        window = find_gsimplecal(i3_json("get_tree"))
+        if window:
+            rect = window.get("rect") or {}
+            width = int(rect.get("width") or 0)
+            height = int(rect.get("height") or 0)
+            if width > 0 and height > 0:
+                return window, rect
+        time.sleep(0.04)
+
+    return fallback_window, fallback_window.get("rect") or {}
+
+
+def remember_size(state_file, width, height):
+    try:
+        Path(state_file).write_text(json.dumps({"width": width, "height": height}) + "\n")
+    except Exception:
+        pass
+
+
 try:
-    config_home, width, height, x, y, output_x, output_y, output_width, output_height = sys.argv[1:10]
+    (
+        config_home,
+        state_file,
+        output_name,
+        workspace_x,
+        workspace_y,
+        workspace_width,
+        workspace_height,
+        margin,
+        gap,
+        date_center,
+        width,
+        height,
+    ) = sys.argv[1:13]
+    workspace_x = int(workspace_x)
+    workspace_y = int(workspace_y)
+    workspace_width = int(workspace_width)
+    workspace_height = int(workspace_height)
+    margin = int(margin)
+    gap = int(gap)
+    date_center = int(date_center)
+    width = int(width)
+    height = int(height)
 
     window = None
     for _ in range(20):
@@ -135,27 +299,39 @@ try:
     if not window:
         raise SystemExit
 
+    window, rect = read_window_rect(window)
+    if not window.get("window"):
+        raise SystemExit
+    width = int(rect.get("width") or width)
+    height = int(rect.get("height") or height)
+    x = centered_on(workspace_x, workspace_width, width, date_center, margin)
+    y = workspace_y + workspace_height - height - gap
+
     subprocess.run(
         (
             "i3-msg",
-            f'[con_id="{window["id"]}"] floating enable, border none, '
-            f"resize set {width} px {height} px, "
+            f'[con_id="{window["id"]}"] '
+            f"move to output {output_name}, "
             f"move absolute position {x} px {y} px, "
-            "move to workspace current, focus",
+            "focus",
         ),
         check=False,
     )
-    if not window.get("window"):
-        raise SystemExit
+    time.sleep(0.04)
+    window, rect = read_window_rect(window)
+
+    remember_size(
+        state_file,
+        int(rect.get("width") or width),
+        int(rect.get("height") or height),
+    )
 
     x_window = str(window["window"])
-    subprocess.run(("xdotool", "windowactivate", "--sync", x_window), check=False)
-    subprocess.run(("xdotool", "windowraise", x_window), check=False)
 
-    left = int(x)
-    top = int(y)
-    right = left + int(width)
-    bottom = top + int(height)
+    left = int(rect.get("x") or x)
+    top = int(rect.get("y") or y)
+    right = left + int(rect.get("width") or width)
+    bottom = top + int(rect.get("height") or height)
 
     def pointer_position():
         values = {}

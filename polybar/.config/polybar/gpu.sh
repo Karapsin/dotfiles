@@ -2,6 +2,21 @@
 
 set -euo pipefail
 
+warm_color="#F0C674"
+hot_color="#A54242"
+
+format_temperature() {
+  local temperature=$1
+
+  if ((temperature >= 85)); then
+    printf '%%{F%s}%s°C%%{F-}' "$hot_color" "$temperature"
+  elif ((temperature >= 75)); then
+    printf '%%{F%s}%s°C%%{F-}' "$warm_color" "$temperature"
+  else
+    printf '%s°C' "$temperature"
+  fi
+}
+
 if ! command -v nvidia-smi >/dev/null 2>&1; then
   printf -- '--%%\n'
   exit 0
@@ -37,7 +52,7 @@ case "$usage" in
         printf '%s%%\n' "$usage"
         ;;
       *)
-        printf '%s%% (%s°C)\n' "$usage" "$temperature"
+        printf '%s%% (%s)\n' "$usage" "$(format_temperature "$temperature")"
         ;;
     esac
     ;;
