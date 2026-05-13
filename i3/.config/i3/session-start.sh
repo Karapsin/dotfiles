@@ -43,6 +43,7 @@ start_once_pattern '[l]xqt-policykit-agent' /usr/bin/lxqt-policykit-agent
 start_once_name nm-applet nm-applet
 start_once_name pasystray pasystray
 start_once_name dunst dunst
+start_once_pattern '[n]emo-tab-pane-switch.sh' "$i3_dir/nemo-tab-pane-switch.sh"
 
 if command -v xset >/dev/null 2>&1 && command -v xss-lock >/dev/null 2>&1 && command -v betterlockscreen >/dev/null 2>&1; then
   xset s 3600 3600 >/dev/null 2>&1 || true

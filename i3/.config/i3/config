@@ -34,7 +34,6 @@ bindsym XF86AudioMute exec --no-startup-id pamixer --toggle-mute
 
 bindsym $mod+Shift+c reload
 bindsym $mod+Shift+r restart
-bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'Exit i3 and end this X session?' -B 'Yes, exit i3' 'i3-msg exit'"
 bindsym $mod+Shift+q kill
 
 # Launchers
@@ -43,6 +42,7 @@ bindcode $mod+104 fullscreen disable; exec --no-startup-id $i3dir/launch-termina
 bindsym $mod+d fullscreen disable; exec --no-startup-id rofi -show drun
 # bindsym $mod+d exec --no-startup-id dmenu_run
 
+bindsym $mod+Shift+e exec --no-startup-id nemo --no-desktop
 bindsym $mod+Shift+s exec --no-startup-id flameshot gui
 bindsym $mod+Shift+l exec --no-startup-id betterlockscreen -l
 bindsym $mod+c exec --no-startup-id google-chrome-stable

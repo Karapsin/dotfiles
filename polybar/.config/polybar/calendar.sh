@@ -14,11 +14,6 @@ from pathlib import Path
 def i3_json(*args):
     return json.loads(subprocess.check_output(("i3-msg", "-t", *args), text=True))
 
-
-def clamp(value, lower, upper):
-    return max(lower, min(upper, value))
-
-
 try:
     workspaces = i3_json("get_workspaces")
     workspace = next((w for w in workspaces if w.get("focused")), None)
@@ -32,10 +27,10 @@ try:
             output_rect = output.get("rect", rect)
             break
 
-    width = clamp(round(rect["width"] * 0.091), 232, 340)
-    height = clamp(round(rect["height"] * 0.122), 172, 260)
-    margin = clamp(round(rect["width"] * 0.006), 12, 24)
-    gap = clamp(round(rect["height"] * 0.006), 8, 16)
+    width = round(rect["width"] * 0.115)
+    height = round(rect["height"] * 0.150)
+    margin = round(rect["width"] * 0.006)
+    gap = round(rect["height"] * 0.008)
 
     x = rect["x"] + rect["width"] - width - margin
     y = rect["y"] + rect["height"] - height - gap

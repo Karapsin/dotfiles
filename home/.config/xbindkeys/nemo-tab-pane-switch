@@ -1,0 +1,2 @@
+"sh -c 'xdotool key --clearmodifiers Alt+g; sleep 0.05; xdotool key --clearmodifiers w'"
+  Tab

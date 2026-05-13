@@ -14,6 +14,7 @@ xorg-xinput
 xorg-xrdb
 xorg-xset
 xdotool
+xbindkeys
 i3-wm
 alacritty
 dmenu
@@ -36,6 +37,11 @@ pavucontrol
 pasystray
 blueman
 libnotify
+nemo
+gvfs
+xdg-desktop-portal
+xdg-desktop-portal-gtk
+adw-gtk-theme
 
 # Script/runtime dependencies used by the repo
 python

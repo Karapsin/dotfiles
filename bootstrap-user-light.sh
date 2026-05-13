@@ -179,6 +179,47 @@ enable_wallpaper_timer() {
   systemctl --user start wallpaper-cycle.service || true
 }
 
+configure_file_dialogs() {
+  local mime_file="$HOME/.config/mimeapps.list"
+  local gtk_theme="adw-gtk3-dark"
+
+  if command -v xdg-mime >/dev/null 2>&1; then
+    if [[ ! -f "$mime_file" ]] || ! grep -Eq '^[[:space:]]*inode/directory=nemo\.desktop([;[:space:]]|$)' "$mime_file"; then
+      xdg-mime default nemo.desktop inode/directory || true
+    fi
+  else
+    echo "Skipping directory MIME default: xdg-mime is unavailable."
+  fi
+
+  if command -v gio >/dev/null 2>&1 && ! gio mime inode/directory 2>/dev/null | grep -q 'nemo\.desktop'; then
+    gio mime inode/directory nemo.desktop >/dev/null 2>&1 || true
+  fi
+
+  if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
+  fi
+
+  if command -v gsettings >/dev/null 2>&1; then
+    gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" >/dev/null 2>&1 || true
+    gsettings set org.gnome.desktop.interface color-scheme prefer-dark >/dev/null 2>&1 || true
+    gsettings set org.cinnamon.desktop.interface gtk-theme "$gtk_theme" >/dev/null 2>&1 || true
+    gsettings set org.nemo.preferences start-with-dual-pane true >/dev/null 2>&1 || true
+    gsettings set org.nemo.preferences default-folder-viewer list-view >/dev/null 2>&1 || true
+    gsettings set org.nemo.window-state start-with-sidebar false >/dev/null 2>&1 || true
+    gsettings set org.nemo.list-view default-visible-columns "['name', 'size', 'type', 'date_modified']" >/dev/null 2>&1 || true
+    gsettings set org.nemo.list-view default-column-order "['name', 'size', 'type', 'date_modified']" >/dev/null 2>&1 || true
+    gsettings set org.nemo.list-view default-zoom-level smaller >/dev/null 2>&1 || true
+  fi
+
+  if [[ $SKIP_SERVICES -eq 1 ]]; then
+    echo "Skipping portal restart."
+  elif systemctl --user show-environment >/dev/null 2>&1; then
+    systemctl --user restart xdg-desktop-portal xdg-desktop-portal-gtk >/dev/null 2>&1 || true
+  else
+    echo "Skipping portal restart: user manager is unavailable."
+  fi
+}
+
 is_managed_target() {
   local target=$1
   local source=$2
@@ -259,14 +300,14 @@ if [[ $ENABLE_LINGER -eq 1 || $ENABLE_LOGIN_WALLPAPER -eq 1 ]]; then
   require_command sudo
 fi
 
-echo "[1/5] Preparing stow targets..."
+echo "[1/6] Preparing stow targets..."
 BACKUP_DIR="$HOME/.dotfiles-bootstrap-backup/$(date +%Y%m%d-%H%M%S)"
 backup_or_reject_conflicts "$BACKUP_DIR"
 
-echo "[2/5] Pulling Git LFS assets (if available)..."
+echo "[2/6] Pulling Git LFS assets (if available)..."
 pull_lfs_assets
 
-echo "[3/5] Deploying stow packages..."
+echo "[3/6] Deploying stow packages..."
 stow --no-folding -d "$DOTFILES_DIR" -t "$HOME" -R "${STOW_PACKAGES[@]}"
 prepare_wallpaper_state
 
@@ -274,6 +315,7 @@ EXPECTED_EXECUTABLES=(
   "$HOME/.config/i3/blueman-launch.sh"
   "$HOME/.config/i3/focus-visual.py"
   "$HOME/.config/i3/launch-terminal.sh"
+  "$HOME/.config/i3/nemo-tab-pane-switch.sh"
   "$HOME/.config/i3/restart_monitors.sh"
   "$HOME/.config/i3/session-start.sh"
   "$HOME/.config/i3/vpn-control-toggle.sh"
@@ -295,7 +337,10 @@ if [[ $missing_executable -ne 0 ]]; then
   exit 1
 fi
 
-echo "[4/5] Enabling user services..."
+echo "[4/6] Configuring file dialogs and folder handling..."
+configure_file_dialogs
+
+echo "[5/6] Enabling user services..."
 if [[ $SKIP_SERVICES -eq 1 ]]; then
   echo "Skipping user systemd setup."
 elif systemctl --user show-environment >/dev/null 2>&1; then
@@ -305,7 +350,7 @@ else
   echo "Run later: systemctl --user daemon-reload && systemctl --user enable wallpaper-cycle.timer && systemctl --user start wallpaper-cycle.timer"
 fi
 
-echo "[5/5] Applying the custom XKB map..."
+echo "[6/6] Applying the custom XKB map..."
 if [[ $SKIP_XKB -eq 1 ]]; then
   echo "Skipping XKB apply."
 elif [[ -x "$HOME/.local/bin/load-xkb-shortcuts" ]]; then
