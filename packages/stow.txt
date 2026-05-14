@@ -8,3 +8,4 @@ gsimplecal
 picom
 rofi
 dunst
+alacritty
