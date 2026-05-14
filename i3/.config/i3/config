@@ -49,7 +49,7 @@ bindsym $mod+c exec --no-startup-id google-chrome-stable
 bindsym $mod+g exec --no-startup-id steam
 bindsym $mod+t exec --no-startup-id Telegram
 bindsym $mod+Shift+v exec --no-startup-id $i3dir/vpn-control-toggle.sh
-bindsym $mod+Mod1+v exec --no-startup-id pavucontrol
+bindsym $mod+Mod1+v exec --no-startup-id pavucontrol --tab=1
 bindsym $mod+Mod1+b exec --no-startup-id $i3dir/blueman-launch.sh --manager
 bindsym $mod+Shift+t exec --no-startup-id element-desktop
 bindsym $mod+p exec --no-startup-id positron
@@ -128,12 +128,15 @@ bindsym $mod+r mode "resize"
 
 # Window rules
 for_window [class="Gsimplecal"] floating enable, border none, move scratchpad
+for_window [class="^pavucontrol$"] floating enable, resize set 680 520, move position mouse, move up 3 ppt
+for_window [class="^Blueman-manager$"] floating enable, resize set 560 480, move position mouse, move up 3 ppt
 for_window [instance="^RAIL$"] move to output $rail_output, floating enable, sticky disable, focus, move position center
 for_window [class="^RAIL(:.*)?$"] move to output $rail_output, floating enable, sticky disable, focus, move position center
 
 # Window colors
-client.focused          #000000 #173348 #FFFFFF #000000 #244B67
-client.focused_inactive #000000 #242A30 #C8CED3 #30363C #30363C
-client.unfocused        #000000 #222222 #888888 #292D2E #222222
-client.urgent           #2F343A #700000 #FFFFFF #900000 #900000
-client.placeholder      #000000 #0C0C0C #FFFFFF #000000 #0C0C0C
+client.focused          #28445a #17212b #d7dde4 #173348 #28445a
+client.focused_inactive #17212b #151b24 #8a949e #17212b #17212b
+client.unfocused        #17212b #151b24 #8a949e #17212b #17212b
+client.urgent           #d26a6a #d26a6a #0c1116 #ef8f8f #d26a6a
+client.placeholder      #11161d #0c1116 #8a949e #11161d #11161d
+client.background       #0c1116

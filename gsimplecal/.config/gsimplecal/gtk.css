@@ -1,0 +1,87 @@
+@define-color theme_bg_color #101820;
+@define-color theme_fg_color #E5EAF0;
+@define-color theme_base_color #101820;
+@define-color theme_text_color #E5EAF0;
+@define-color theme_selected_bg_color #23516F;
+@define-color theme_selected_fg_color #FFFFFF;
+
+* {
+    background-image: none;
+    color: @theme_fg_color;
+    font-size: @font_size_px@px;
+    text-shadow: none;
+    box-shadow: none;
+}
+
+window,
+window.background,
+calendar,
+.view {
+    background-color: @theme_bg_color;
+    color: @theme_fg_color;
+}
+
+window {
+    border: @border_width_px@px solid #23516F;
+    border-radius: 0.46em;
+}
+
+calendar {
+    padding: 0.62em;
+    border: @border_width_px@px solid #23516F;
+    border-radius: 0.46em;
+}
+
+calendar header,
+calendar grid {
+    background-color: @theme_bg_color;
+    color: @theme_fg_color;
+}
+
+calendar.button {
+    padding: 0.15em 0.46em;
+    border: @border_width_px@px solid #263645;
+    border-radius: 0.31em;
+    background-color: #172331;
+    color: @theme_fg_color;
+}
+
+calendar.button:hover {
+    border-color: #3A78A2;
+    background-color: #23516F;
+}
+
+calendar.button:active {
+    background-color: #28445A;
+}
+
+calendar.button:disabled {
+    background-color: @theme_bg_color;
+    color: #8A949E;
+}
+
+calendar.header,
+calendar header {
+    background-color: #172331;
+    color: @theme_fg_color;
+}
+
+calendar.highlight,
+calendar .highlight,
+.highlight {
+    color: #9CCFD8;
+}
+
+calendar:indeterminate {
+    color: #8A949E;
+}
+
+calendar:selected,
+calendar:selected:focus,
+calendar:backdrop:selected {
+    background-color: @theme_selected_bg_color;
+    background-image: none;
+    box-shadow: 0 -0.42em 0 0.42em @theme_selected_bg_color;
+    color: @theme_selected_fg_color;
+    border-radius: 0.46em;
+}

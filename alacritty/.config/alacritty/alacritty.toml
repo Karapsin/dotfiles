@@ -1,2 +1,118 @@
+[general]
+live_config_reload = true
+ipc_socket = true
+
+[env]
+TERM = "xterm-256color"
+
+[window]
+padding = { x = 6, y = 4 }
+dynamic_padding = true
+decorations_theme_variant = "Dark"
+resize_increments = true
+opacity = 1.0
+dynamic_title = true
+
+[scrolling]
+history = 50000
+multiplier = 3
+
 [font]
-size = 16.0
+size = 14.0
+builtin_box_drawing = true
+
+[colors]
+draw_bold_text_with_bright_colors = true
+transparent_background_colors = false
+
+[colors.primary]
+background = "#0c1116"
+foreground = "#d7dde4"
+dim_foreground = "#8a949e"
+bright_foreground = "#f4f7fb"
+
+[colors.cursor]
+text = "CellBackground"
+cursor = "#9ccfd8"
+
+[colors.vi_mode_cursor]
+text = "CellBackground"
+cursor = "#f5c76f"
+
+[colors.selection]
+text = "CellForeground"
+background = "#28445a"
+
+[colors.search.matches]
+foreground = "#0c1116"
+background = "#6aa5d8"
+
+[colors.search.focused_match]
+foreground = "#0c1116"
+background = "#f5c76f"
+
+[colors.hints.start]
+foreground = "#0c1116"
+background = "#f5c76f"
+
+[colors.hints.end]
+foreground = "#0c1116"
+background = "#9ccfd8"
+
+[colors.footer_bar]
+foreground = "#d7dde4"
+background = "#173348"
+
+[colors.normal]
+black = "#11161d"
+red = "#d26a6a"
+green = "#8fbf7f"
+yellow = "#d9b66f"
+blue = "#6aa5d8"
+magenta = "#b48ead"
+cyan = "#7dc7c5"
+white = "#d7dde4"
+
+[colors.bright]
+black = "#4b5563"
+red = "#ef8f8f"
+green = "#acd89b"
+yellow = "#f5c76f"
+blue = "#8fc7f5"
+magenta = "#d5a6d6"
+cyan = "#9ccfd8"
+white = "#f4f7fb"
+
+[selection]
+save_to_clipboard = true
+
+[cursor]
+style = { shape = "Beam", blinking = "On" }
+vi_mode_style = { shape = "Block", blinking = "Off" }
+blink_interval = 600
+blink_timeout = 5
+unfocused_hollow = true
+thickness = 0.18
+
+[mouse]
+hide_when_typing = true
+
+[hints]
+alphabet = "jfkdls;ahgurieowpq"
+
+[[hints.enabled]]
+regex = '(ipfs:|ipns:|magnet:|mailto:|gemini://|gopher://|https://|http://|news:|file:|git://|ssh:|ftp://)[^\s<>"{}|\\^`]+'
+hyperlinks = true
+post_processing = true
+persist = false
+command = "xdg-open"
+binding = { key = "O", mods = "Control|Shift" }
+mouse = { enabled = true, mods = "Control" }
+
+[[hints.enabled]]
+regex = '([~/]|\./|\../)[-[:alnum:]_./]+(:[0-9]+)?'
+post_processing = true
+persist = false
+action = "Copy"
+binding = { key = "P", mods = "Control|Shift" }
+mouse = { enabled = true, mods = "Control|Shift" }

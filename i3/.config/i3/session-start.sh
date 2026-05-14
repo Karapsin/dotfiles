@@ -3,6 +3,12 @@
 user_id=$(id -u)
 i3_dir="${0%/*}"
 
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) ;;
+  *) PATH="$HOME/.local/bin:$PATH" ;;
+esac
+export PATH
+
 if command -v xrdb >/dev/null 2>&1 && [ -f "$HOME/.Xresources" ]; then
   xrdb -merge "$HOME/.Xresources" >/dev/null 2>&1 || true
 fi

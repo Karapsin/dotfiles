@@ -1,0 +1,166 @@
+@define-color theme_bg_color #0c1116;
+@define-color theme_fg_color #d7dde4;
+@define-color theme_base_color #11161d;
+@define-color theme_text_color #d7dde4;
+@define-color theme_selected_bg_color #28445a;
+@define-color theme_selected_fg_color #f4f7fb;
+@define-color accent_bg_color #173348;
+@define-color accent_fg_color #f4f7fb;
+@define-color warning_color #f5c76f;
+@define-color error_color #d26a6a;
+@define-color border_color #28445a;
+@define-color disabled_fg_color #8a949e;
+
+* {
+  background-image: none;
+  color: @theme_fg_color;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+window,
+window.background,
+.background {
+  background-color: @theme_bg_color;
+  color: @theme_fg_color;
+}
+
+headerbar,
+.titlebar,
+menubar,
+toolbar,
+statusbar {
+  background-color: #151b24;
+  color: @theme_fg_color;
+  border-color: @border_color;
+}
+
+menu,
+menuitem,
+popover,
+popover.background {
+  background-color: @theme_base_color;
+  color: @theme_fg_color;
+}
+
+menuitem:hover,
+menuitem:selected {
+  background-color: @theme_selected_bg_color;
+  color: @theme_selected_fg_color;
+}
+
+notebook,
+notebook stack,
+viewport,
+scrolledwindow,
+box,
+paned,
+.view,
+treeview,
+list,
+row {
+  background-color: @theme_bg_color;
+  color: @theme_fg_color;
+}
+
+notebook header {
+  background-color: #151b24;
+  border-bottom: 1px solid @border_color;
+}
+
+notebook tab {
+  background-color: #151b24;
+  color: @theme_fg_color;
+  border-color: transparent;
+  padding: 7px 12px;
+}
+
+notebook tab:hover {
+  background-color: #17212b;
+}
+
+notebook tab:checked {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  border-bottom: 3px solid #9ccfd8;
+}
+
+button,
+combobox,
+combobox button,
+entry,
+spinbutton {
+  background-color: @theme_base_color;
+  color: @theme_fg_color;
+  border: 1px solid @border_color;
+  border-radius: 5px;
+}
+
+button:hover,
+combobox button:hover {
+  background-color: #17212b;
+  border-color: #6f9fb0;
+}
+
+button:checked,
+button:active {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  border-color: #6f9fb0;
+}
+
+button:disabled,
+label:disabled,
+entry:disabled,
+treeview.view:disabled {
+  color: @disabled_fg_color;
+}
+
+treeview.view:selected,
+treeview.view:selected:focus,
+row:hover,
+row:selected,
+*:selected {
+  background-color: @theme_selected_bg_color;
+  color: @theme_selected_fg_color;
+}
+
+scale trough {
+  background-color: #29313a;
+  border-radius: 999px;
+  min-height: 4px;
+}
+
+scale highlight {
+  background-color: #6aa5d8;
+  border-radius: 999px;
+}
+
+scale slider {
+  background-color: #d7dde4;
+  border: 1px solid #8a949e;
+  border-radius: 999px;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+switch {
+  background-color: #29313a;
+  border: 1px solid @border_color;
+  border-radius: 999px;
+}
+
+switch:checked {
+  background-color: #173348;
+  border-color: #6aa5d8;
+}
+
+switch slider {
+  background-color: #d7dde4;
+  border-radius: 999px;
+}
+
+separator {
+  background-color: @border_color;
+  min-height: 1px;
+}

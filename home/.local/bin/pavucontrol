@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help|--help-*|-v|--version)
+      exec /usr/bin/pavucontrol "$@"
+      ;;
+    -t|--tab|--tab=*)
+      exec /usr/bin/pavucontrol "$@"
+      ;;
+  esac
+done
+
+exec /usr/bin/pavucontrol --tab=1 "$@"

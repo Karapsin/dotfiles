@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Volume Control
+GenericName=Volume Control
+Comment=Adjust the volume level
+Exec=pavucontrol --tab=1
+Icon=org.pulseaudio.pavucontrol
+StartupNotify=true
+Categories=AudioVideo;Audio;Mixer;GTK;
+Keywords=pavucontrol;PulseAudio;Microphone;Volume;Fade;Balance;Headset;Speakers;Headphones;Audio;Mixer;Output;Input;Devices;Playback;Recording;System Sounds;Sound Card;Settings;Preferences;

@@ -4,7 +4,7 @@ case "$1" in
   --popup)
     if command -v gsimplecal >/dev/null 2>&1; then
       if command -v python3 >/dev/null 2>&1 && command -v i3-msg >/dev/null 2>&1 && command -v xdotool >/dev/null 2>&1 && command -v xinput >/dev/null 2>&1; then
-        geometry="$(python3 - <<'PY' 2>/dev/null
+        geometry="$(POLYBAR_CALENDAR_SCRIPT="$0" python3 - <<'PY' 2>/dev/null
 import json
 import os
 import shutil
@@ -64,6 +64,28 @@ def polybar_font_description():
             break
 
     return f"{family} {size}"
+
+
+def adaptive_ui_metrics(rect, dpi):
+    width = max(1, int(rect.get("width") or 3840))
+    height = max(1, int(rect.get("height") or 2160))
+    scale = min(width / 3840, height / 2160)
+    scale = max(0.75, min(scale, 1.8))
+
+    if dpi > 96:
+        scale = max(scale, min(dpi / 96, 1.8))
+
+    return {
+        "@font_size_px@": str(max(10, round(13 * scale))),
+        "@border_width_px@": str(max(1, round(scale))),
+    }
+
+
+def render_gtk_css(css, rect, dpi):
+    for placeholder, value in adaptive_ui_metrics(rect, dpi).items():
+        css = css.replace(placeholder, value)
+
+    return css
 
 
 def measure_text_width(text, rect, dpi):
@@ -165,6 +187,36 @@ try:
             )
         )
     )
+
+    gtk_dir = config_home / "gtk-3.0"
+    gtk_dir.mkdir(parents=True, exist_ok=True)
+    (gtk_dir / "settings.ini").write_text(
+        "\n".join(
+            (
+                "[Settings]",
+                "gtk-application-prefer-dark-theme=1",
+                "",
+            )
+        )
+    )
+    theme_css_candidates = []
+    configured_theme_css = os.environ.get("GSIMPLECAL_GTK_CSS")
+    if configured_theme_css:
+        theme_css_candidates.append(Path(configured_theme_css).expanduser())
+    theme_css_candidates.append(Path.home() / ".config" / "gsimplecal" / "gtk.css")
+
+    script_path = os.environ.get("POLYBAR_CALENDAR_SCRIPT")
+    if script_path:
+        try:
+            dotfiles_root = Path(script_path).expanduser().resolve().parents[3]
+            theme_css_candidates.append(dotfiles_root / "gsimplecal" / ".config" / "gsimplecal" / "gtk.css")
+        except IndexError:
+            pass
+
+    for theme_css in theme_css_candidates:
+        if theme_css.is_file():
+            (gtk_dir / "gtk.css").write_text(render_gtk_css(theme_css.read_text(), rect, dpi))
+            break
 
     print(
         config_home,

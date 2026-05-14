@@ -1,0 +1,146 @@
+@define-color theme_bg_color #0c1116;
+@define-color theme_fg_color #d7dde4;
+@define-color theme_base_color #11161d;
+@define-color theme_text_color #d7dde4;
+@define-color theme_selected_bg_color #28445a;
+@define-color theme_selected_fg_color #f4f7fb;
+@define-color accent_bg_color #173348;
+@define-color accent_fg_color #f4f7fb;
+@define-color warning_color #f5c76f;
+@define-color error_color #d26a6a;
+@define-color border_color #28445a;
+@define-color disabled_fg_color #8a949e;
+
+* {
+  background-image: none;
+  color: @theme_fg_color;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+window,
+window.background {
+  background-color: @theme_bg_color;
+  color: @theme_fg_color;
+}
+
+headerbar,
+.titlebar {
+  background-color: #151b24;
+  color: @theme_fg_color;
+  border-bottom: 1px solid @border_color;
+}
+
+notebook,
+notebook > stack,
+viewport,
+scrolledwindow,
+box {
+  background-color: @theme_bg_color;
+}
+
+notebook > header {
+  background-color: #151b24;
+  border-bottom: 1px solid @border_color;
+}
+
+notebook > header > tabs > tab {
+  background-color: #151b24;
+  color: @theme_fg_color;
+  border-color: transparent;
+  padding: 8px 14px;
+}
+
+notebook > header > tabs > tab:hover {
+  background-color: #17212b;
+}
+
+notebook > header > tabs > tab:checked {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  border-bottom: 3px solid #9ccfd8;
+}
+
+button,
+menubutton,
+combobox,
+dropdown,
+entry,
+spinbutton,
+treeview.view {
+  background-color: @theme_base_color;
+  color: @theme_fg_color;
+  border: 1px solid @border_color;
+  border-radius: 5px;
+}
+
+button:hover,
+menubutton:hover,
+combobox:hover,
+dropdown:hover {
+  background-color: #17212b;
+  border-color: #6f9fb0;
+}
+
+button:checked,
+button:active {
+  background-color: @accent_bg_color;
+  color: @accent_fg_color;
+  border-color: #6f9fb0;
+}
+
+button:disabled,
+label:disabled,
+entry:disabled {
+  color: @disabled_fg_color;
+}
+
+popover,
+popover contents,
+menu,
+list,
+row {
+  background-color: @theme_base_color;
+  color: @theme_fg_color;
+}
+
+row:hover,
+row:selected,
+*:selected {
+  background-color: @theme_selected_bg_color;
+  color: @theme_selected_fg_color;
+}
+
+scale trough {
+  background-color: #29313a;
+  border-radius: 999px;
+  min-height: 4px;
+}
+
+scale highlight {
+  background-color: #6aa5d8;
+  border-radius: 999px;
+}
+
+scale slider {
+  background-color: #d7dde4;
+  border: 1px solid #8a949e;
+  border-radius: 999px;
+  min-width: 16px;
+  min-height: 16px;
+}
+
+scale slider:hover {
+  background-color: #f4f7fb;
+  border-color: #9ccfd8;
+}
+
+levelbar block.filled,
+progressbar progress {
+  background-color: #6aa5d8;
+}
+
+separator {
+  background-color: @border_color;
+  min-height: 1px;
+}

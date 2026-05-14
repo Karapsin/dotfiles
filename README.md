@@ -12,15 +12,15 @@ Run these from a newly installed Arch system:
 sudo pacman -S --needed git
 git clone /path/to/your/repo ~/dotfiles
 cd ~/dotfiles
-sudo ./bootstrap-root.sh --enable-networkmanager --with-lightdm
-./bootstrap-user.sh
+sudo ./bootstrap.sh --root --enable-networkmanager --with-lightdm
+./bootstrap.sh --user
 ```
 
 If you want unattended package installs:
 
 ```bash
-sudo ./bootstrap-root.sh --noconfirm --enable-networkmanager --with-lightdm
-./bootstrap-user.sh --noconfirm
+sudo ./bootstrap.sh --root --noconfirm --enable-networkmanager --with-lightdm
+./bootstrap.sh --user --noconfirm
 ```
 
 ## New User On An Existing Machine
@@ -32,7 +32,7 @@ apply this repo for another local user:
 ```bash
 git clone /path/to/your/repo ~/dotfiles
 cd ~/dotfiles
-./bootstrap-user-light.sh
+./bootstrap.sh --user-light
 ```
 
 It does not install pacman or AUR packages. Existing target files, such as a
@@ -42,10 +42,18 @@ fresh user's default `~/.bashrc`, are moved into
 For per-user system integration on the configured machine:
 
 ```bash
-./bootstrap-user-light.sh --enable-linger --enable-login-wallpaper
+./bootstrap.sh --user-light --enable-linger --enable-login-wallpaper
 ```
 
 ## What The Scripts Do
+
+`bootstrap.sh` dispatches to exactly one mode and forwards the remaining
+arguments unchanged:
+- `--root` runs `bootstrap-root.sh`
+- `--user` runs `bootstrap-user.sh`
+- `--user-light` runs `bootstrap-user-light.sh`
+
+The direct scripts remain valid entrypoints for compatibility.
 
 `bootstrap-root.sh`:
 - installs official packages from [`packages/pacman.txt`](packages/pacman.txt)
@@ -55,10 +63,12 @@ For per-user system integration on the configured machine:
 - optionally installs LightDM packages from [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt) and the wallpaper sync units
 
 `bootstrap-user.sh`:
+- backs up unmanaged target files that would conflict with Stow links
 - pulls Git LFS assets when `git-lfs` is installed
 - stows packages from [`packages/stow.txt`](packages/stow.txt)
 - bootstraps `yay` if needed
 - installs AUR packages from [`packages/aur.txt`](packages/aur.txt)
+- verifies executable bits for scripts used by the desktop config
 - enables the wallpaper timer
 - applies the custom XKB map immediately
 
@@ -89,3 +99,11 @@ Edit these manifests to match the machine you want to rebuild:
 - [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt)
 - [`packages/aur.txt`](packages/aur.txt)
 - [`packages/stow.txt`](packages/stow.txt)
+
+## Validation
+
+Run the non-mutating validation script before committing bootstrap changes:
+
+```bash
+./scripts/check_dotfiles.sh
+```
