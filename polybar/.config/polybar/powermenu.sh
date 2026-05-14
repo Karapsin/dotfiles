@@ -5,6 +5,8 @@ set -euo pipefail
 reboot_label=" reboot"
 poweroff_label=" poweroff"
 logout_label="logout"
+screenshot_keys="Super+Shift+s,Super+S"
+cancel_keys="Escape,Control+g,Control+bracketleft,Super+Shift+p,Super+P"
 
 dpi="${POLYBAR_DPI:-96}"
 case "$dpi" in
@@ -49,6 +51,7 @@ element {
 }
 "
 
+set +e
 choice="$(
   printf '%s\n' "$reboot_label" "$poweroff_label" "$logout_label" |
     rofi \
@@ -56,10 +59,28 @@ choice="$(
       -no-custom \
       -no-sort \
       -no-show-icons \
+      -kb-custom-1 "$screenshot_keys" \
+      -kb-cancel "$cancel_keys" \
       -p "" \
       -l 3 \
       -theme-str "$theme"
-)" || exit 0
+)"
+status=$?
+set -e
+
+case "$status" in
+  0)
+    ;;
+  1)
+    exit 0
+    ;;
+  10)
+    exec flameshot gui
+    ;;
+  *)
+    exit "$status"
+    ;;
+esac
 
 case "$choice" in
   "$reboot_label")

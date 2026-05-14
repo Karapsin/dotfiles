@@ -102,6 +102,7 @@ EXPECTED_EXECUTABLES=(
   "$HOME/.config/i3/blueman-launch.sh"
   "$HOME/.config/i3/focus-visual.py"
   "$HOME/.config/i3/launch-terminal.sh"
+  "$HOME/.config/i3/nemo-switch-pane.py"
   "$HOME/.config/i3/nemo-tab-pane-switch.sh"
   "$HOME/.config/i3/restart_monitors.sh"
   "$HOME/.config/i3/session-start.sh"

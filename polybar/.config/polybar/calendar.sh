@@ -2,9 +2,53 @@
 
 case "$1" in
   --popup)
-    if command -v gsimplecal >/dev/null 2>&1; then
+    config_home="${XDG_RUNTIME_DIR:-/tmp}/gsimplecal-polybar"
+    outside_close_file="$config_home/outside-close"
+    popup_pid_file="$config_home/popup.pid"
+    script_path="$(readlink -f "$0" 2>/dev/null || printf '%s\n' "$0")"
+    calendar_popup="$(dirname "$script_path")/calendar_popup.py"
+
+    if [ -f "$popup_pid_file" ]; then
+      popup_pid="$(sed -n '1p' "$popup_pid_file" 2>/dev/null || true)"
+      case "$popup_pid" in
+        ''|*[!0-9]*)
+          rm -f "$popup_pid_file"
+          ;;
+        *)
+          if kill -0 "$popup_pid" 2>/dev/null; then
+            kill "$popup_pid" 2>/dev/null || true
+            rm -f "$popup_pid_file"
+            exit 0
+          fi
+          rm -f "$popup_pid_file"
+          ;;
+      esac
+    fi
+
+    if pgrep -x gsimplecal >/dev/null 2>&1; then
+      pkill -x gsimplecal >/dev/null 2>&1
+      exit 0
+    fi
+
+    if command -v python3 >/dev/null 2>&1 && [ -f "$outside_close_file" ] && python3 - "$outside_close_file" <<'PY'
+import os
+import sys
+import time
+
+try:
+    age = time.time() - os.path.getmtime(sys.argv[1])
+except OSError:
+    raise SystemExit(1)
+
+raise SystemExit(0 if age < 0.75 else 1)
+PY
+    then
+      exit 0
+    fi
+
+    if command -v gsimplecal >/dev/null 2>&1 || [ -x "$calendar_popup" ]; then
       if command -v python3 >/dev/null 2>&1 && command -v i3-msg >/dev/null 2>&1 && command -v xdotool >/dev/null 2>&1 && command -v xinput >/dev/null 2>&1; then
-        geometry="$(POLYBAR_CALENDAR_SCRIPT="$0" python3 - <<'PY' 2>/dev/null
+        geometry="$(POLYBAR_CALENDAR_SCRIPT="$script_path" python3 - <<'PY' 2>/dev/null
 import json
 import os
 import shutil
@@ -50,6 +94,62 @@ def safe_name(value):
     return "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in value or "default")
 
 
+def positive_int(value, default):
+    try:
+        result = int(value)
+        return result if result > 0 else default
+    except (TypeError, ValueError):
+        return default
+
+
+def output_dpi(output_name):
+    configured = positive_int(os.environ.get("POLYBAR_DPI"), 0)
+    if configured:
+        return configured
+
+    if not output_name or not shutil.which("xrandr"):
+        return 96
+
+    try:
+        output = subprocess.check_output(
+            ("xrandr", "--query"),
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        return 96
+
+    for line in output.splitlines():
+        fields = line.split()
+        if len(fields) < 2 or fields[0] != output_name or fields[1] != "connected":
+            continue
+
+        width = 0
+        mm_width = 0
+        for index, field in enumerate(fields):
+            if "x" in field and "+" in field:
+                try:
+                    width = int(field.split("x", 1)[0])
+                except ValueError:
+                    pass
+
+            if (
+                field.endswith("mm")
+                and index + 2 < len(fields)
+                and fields[index + 1] == "x"
+                and fields[index + 2].endswith("mm")
+            ):
+                try:
+                    mm_width = int(field[:-2])
+                except ValueError:
+                    pass
+
+        if width > 0 and mm_width > 0:
+            return round(width * 25.4 / mm_width)
+
+    return 96
+
+
 def polybar_font_description():
     font = os.environ.get(
         "POLYBAR_FONT_0",
@@ -86,6 +186,24 @@ def render_gtk_css(css, rect, dpi):
         css = css.replace(placeholder, value)
 
     return css
+
+
+def ensure_monday_locale(config_home):
+    locale_dir = config_home / "locale"
+    locale_name = "en_GB.UTF-8"
+    if (locale_dir / locale_name / "LC_TIME").is_file():
+        return
+
+    if not shutil.which("localedef"):
+        return
+
+    locale_dir.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ("localedef", "--no-archive", "-i", "en_GB", "-f", "UTF-8", str(locale_dir / locale_name)),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
 
 
 def measure_text_width(text, rect, dpi):
@@ -154,11 +272,12 @@ try:
     gap = round(rect["height"] * 0.006)
 
     config_home = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "gsimplecal-polybar"
+    ensure_monday_locale(config_home)
     state_file = config_home / f"last-size-{safe_name(workspace.get('output'))}.json"
     width, height = estimated_size(rect, (state_file, config_home / "last-size.json"))
 
     date_text = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    dpi = int(os.environ.get("POLYBAR_DPI", "96") or "96")
+    dpi = output_dpi(workspace.get("output") or output_name)
     date_width = measure_text_width(date_text, rect, dpi)
     char_width = max(1, round(date_width / max(1, len(date_text))))
     padding_right = int(os.environ.get("POLYBAR_PADDING_RIGHT", "1") or "1") * char_width
@@ -175,6 +294,7 @@ try:
                 "show_week_numbers = 0",
                 "close_on_unfocus = 0",
                 "close_on_mouseleave = 0",
+                "force_lang = en_GB.UTF-8",
                 "mainwindow_decorated = 0",
                 "mainwindow_keep_above = 1",
                 "mainwindow_sticky = 0",
@@ -251,12 +371,22 @@ PY
           width=${11}
           height=${12}
 
-          if pgrep -x gsimplecal >/dev/null 2>&1; then
-            pkill -x gsimplecal >/dev/null 2>&1
-            exit 0
+          locale_home="$config_home/locale"
+          locale_name=en_GB.UTF-8
+          if [ -x "$calendar_popup" ]; then
+            if [ -f "$locale_home/$locale_name/LC_TIME" ]; then
+              setsid env XDG_CONFIG_HOME="$config_home" LOCPATH="$locale_home" LC_ALL="$locale_name" LANG="$locale_name" "$calendar_popup" >/dev/null 2>&1 &
+            else
+              setsid env XDG_CONFIG_HOME="$config_home" "$calendar_popup" >/dev/null 2>&1 &
+            fi
+            printf '%s\n' "$!" > "$popup_pid_file"
+          else
+            if [ -f "$locale_home/$locale_name/LC_TIME" ]; then
+              setsid env XDG_CONFIG_HOME="$config_home" LOCPATH="$locale_home" LC_ALL="$locale_name" LANG="$locale_name" gsimplecal >/dev/null 2>&1 &
+            else
+              setsid env XDG_CONFIG_HOME="$config_home" gsimplecal >/dev/null 2>&1 &
+            fi
           fi
-
-          setsid env XDG_CONFIG_HOME="$config_home" gsimplecal >/dev/null 2>&1 &
 
           setsid python3 - "$config_home" "$state_file" "$output_name" "$workspace_x" "$workspace_y" "$workspace_width" "$workspace_height" "$margin" "$gap" "$date_center" "$width" "$height" <<'PY' >/dev/null 2>&1 &
 import json
@@ -440,6 +570,10 @@ try:
             armed = True
 
         if armed and "RawButtonPress" in line and not pointer_inside_calendar():
+            try:
+                (Path(config_home) / "outside-close").write_text(f"{time.time()}\n")
+            except Exception:
+                pass
             subprocess.run(("xdotool", "windowunmap", x_window, "windowclose", x_window), check=False)
             break
 
@@ -458,10 +592,14 @@ PY
         fi
       fi
 
+      if [ -x "$calendar_popup" ]; then
+        exec env XDG_CONFIG_HOME="$config_home" "$calendar_popup"
+      fi
+
       exec gsimplecal
     fi
 
-    notify-send "Calendar unavailable" "Install gsimplecal to use the Polybar datetime calendar."
+    notify-send "Calendar unavailable" "Install gsimplecal or PyGObject to use the Polybar datetime calendar."
     exit 1
     ;;
   *)

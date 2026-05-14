@@ -27,6 +27,8 @@ window {
 }
 
 calendar {
+    -GtkCalendar-horizontal-separation: 0;
+    -GtkCalendar-vertical-separation: 0;
     padding: 0.62em;
     border: @border_width_px@px solid #23516F;
     border-radius: 0.46em;
@@ -81,7 +83,81 @@ calendar:selected:focus,
 calendar:backdrop:selected {
     background-color: @theme_selected_bg_color;
     background-image: none;
-    box-shadow: 0 -0.42em 0 0.42em @theme_selected_bg_color;
+    box-shadow: none;
     color: @theme_selected_fg_color;
     border-radius: 0.46em;
+}
+
+.polybar-calendar {
+    background-color: @theme_bg_color;
+    border: @border_width_px@px solid #23516F;
+    border-radius: 0.46em;
+    padding: 0.52em;
+}
+
+.polybar-calendar-header {
+    margin-bottom: 0.42em;
+}
+
+.polybar-calendar-title {
+    color: @theme_fg_color;
+    font-weight: 500;
+}
+
+button.polybar-calendar-nav {
+    background-color: @theme_base_color;
+    background-image: none;
+    border: @border_width_px@px solid #23516F;
+    border-radius: 0.32em;
+    box-shadow: none;
+    color: @theme_fg_color;
+    min-height: 1.45em;
+    min-width: 1.45em;
+    padding: 0;
+}
+
+button.polybar-calendar-nav:hover {
+    background-color: #183247;
+    border-color: #3A78A2;
+}
+
+.polybar-calendar-weekday,
+.polybar-calendar-side-label {
+    color: #9CCFD8;
+    min-height: 1.8em;
+    min-width: 2.45em;
+}
+
+.polybar-calendar-side-label {
+    color: #6F8798;
+}
+
+.polybar-calendar-day {
+    background-color: transparent;
+    border: @border_width_px@px solid transparent;
+    border-radius: 0.42em;
+    min-height: 1.8em;
+    min-width: 2.45em;
+}
+
+.polybar-calendar-day label {
+    color: @theme_fg_color;
+}
+
+.polybar-calendar-day.other-month label {
+    color: #7E8B96;
+}
+
+.polybar-calendar-day.today {
+    border-color: #3A78A2;
+}
+
+.polybar-calendar-day.selected {
+    background-color: @theme_selected_bg_color;
+    border-color: @theme_selected_bg_color;
+}
+
+.polybar-calendar-day.selected label {
+    color: @theme_selected_fg_color;
+    font-weight: 700;
 }

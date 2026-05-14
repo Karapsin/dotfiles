@@ -32,7 +32,7 @@ bindsym XF86AudioRaiseVolume exec --no-startup-id pamixer --increase 5
 bindsym XF86AudioLowerVolume exec --no-startup-id pamixer --decrease 5
 bindsym XF86AudioMute exec --no-startup-id pamixer --toggle-mute
 
-bindsym $mod+Shift+c reload
+bindsym $mod+Shift+c exec --no-startup-id $HOME/.config/polybar/calendar.sh --popup
 bindsym $mod+Shift+r restart
 bindsym $mod+Shift+q kill
 
@@ -45,6 +45,7 @@ bindsym $mod+d fullscreen disable; exec --no-startup-id rofi -show drun
 bindsym $mod+Shift+e exec --no-startup-id nemo --no-desktop
 bindsym $mod+Shift+s exec --no-startup-id flameshot gui
 bindsym $mod+Shift+l exec --no-startup-id betterlockscreen -l
+bindsym $mod+Shift+p exec --no-startup-id $HOME/.config/polybar/powermenu.sh
 bindsym $mod+c exec --no-startup-id google-chrome-stable
 bindsym $mod+g exec --no-startup-id steam
 bindsym $mod+t exec --no-startup-id Telegram
