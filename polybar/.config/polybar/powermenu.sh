@@ -53,12 +53,13 @@ element {
 
 set +e
 choice="$(
-  printf '%s\n' "$reboot_label" "$poweroff_label" "$logout_label" |
+  printf '%s\n' "$logout_label" "$reboot_label" "$poweroff_label" |
     rofi \
       -dmenu \
       -no-custom \
       -no-sort \
       -no-show-icons \
+      -selected-row 2 \
       -hover-select \
       -me-select-entry "" \
       -me-accept-entry MousePrimary \
