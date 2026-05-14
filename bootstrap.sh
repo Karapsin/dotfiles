@@ -23,21 +23,64 @@ Direct script entrypoints remain supported:
 EOF
 }
 
-if [[ $# -eq 0 ]]; then
-  echo "Missing mode flag." >&2
-  usage >&2
-  exit 1
-fi
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+mode_count=0
+target_script=""
+target_args=()
+
+choose_mode_interactively() {
+  local choice
+
+  cat <<'EOF'
+Choose bootstrap mode:
+
+  1) Root bootstrap
+     Use with sudo on a fresh install or when system packages, keyboard
+     baseline, NetworkManager, LightDM, or system units need setup.
+
+  2) User bootstrap
+     Use as your normal user after root bootstrap. Stows dotfiles, installs
+     AUR packages, configures user services, wallpaper cycling, and XKB.
+
+  3) Light user bootstrap
+     Use as a normal user on a machine that is already system-configured.
+     Stows dotfiles and user services without installing packages.
+
+EOF
+
+  printf 'Enter 1, 2, or 3: '
+  if ! read -r choice; then
+    echo "No mode selected." >&2
+    exit 1
+  fi
+
+  case "$choice" in
+    1|root|--root)
+      target_script="$SCRIPT_DIR/bootstrap-root.sh"
+      ;;
+    2|user|--user)
+      target_script="$SCRIPT_DIR/bootstrap-user.sh"
+      ;;
+    3|light|user-light|--user-light)
+      target_script="$SCRIPT_DIR/bootstrap-user-light.sh"
+      ;;
+    *)
+      echo "Unknown selection: $choice" >&2
+      echo "Choose 1, 2, or 3." >&2
+      exit 1
+      ;;
+  esac
+}
 
 if [[ $# -eq 1 && ( "$1" == "-h" || "$1" == "--help" ) ]]; then
   usage
   exit 0
 fi
 
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-mode_count=0
-target_script=""
-target_args=()
+if [[ $# -eq 0 ]]; then
+  choose_mode_interactively
+  exec "$target_script"
+fi
 
 for arg in "$@"; do
   case "$arg" in

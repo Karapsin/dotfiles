@@ -29,14 +29,25 @@
   border-top: 1px solid alpha(#6aa5d8, 0.35);
   color: @theme_fg_color;
   font-weight: 600;
+  min-height: 38px;
+}
+
+#panel_window menubar,
+#panel_window .menubar {
+  min-height: 38px;
 }
 
 #panel_window menubar,
 #panel_window menuitem,
-#panel_window .menubar,
 #panel_window .menubar > .menuitem {
   background-color: transparent;
   color: @theme_fg_color;
+}
+
+#panel_window menubar > menuitem,
+#panel_window .menubar > .menuitem {
+  min-height: 38px;
+  padding: 0 12px;
 }
 
 #panel_window menu,
