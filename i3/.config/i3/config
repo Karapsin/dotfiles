@@ -24,6 +24,8 @@ hide_edge_borders smart
 # Autostart
 exec_always --no-startup-id xrandr --output DP-0 --mode 2560x1440 --rate 143.97
 exec --no-startup-id $i3dir/session-start.sh
+exec --no-startup-id $i3dir/close-popups-on-outside-click.sh
+exec --no-startup-id $i3dir/volume-tray-left-click.sh
 exec --no-startup-id $HOME/.config/polybar/launch.sh restart
 exec_always --no-startup-id $HOME/.local/bin/load-xkb-shortcuts
 

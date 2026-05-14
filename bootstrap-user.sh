@@ -117,12 +117,14 @@ prepare_wallpaper_state
 
 EXPECTED_EXECUTABLES=(
   "$HOME/.config/i3/blueman-launch.sh"
+  "$HOME/.config/i3/close-popups-on-outside-click.sh"
   "$HOME/.config/i3/focus-visual.py"
   "$HOME/.config/i3/launch-terminal.sh"
   "$HOME/.config/i3/nemo-switch-pane.py"
   "$HOME/.config/i3/nemo-tab-pane-switch.sh"
   "$HOME/.config/i3/restart_monitors.sh"
   "$HOME/.config/i3/session-start.sh"
+  "$HOME/.config/i3/volume-tray-left-click.sh"
   "$HOME/.config/i3/vpn-control-toggle.sh"
   "$HOME/.config/polybar/calendar.sh"
   "$HOME/.config/polybar/launch.sh"
