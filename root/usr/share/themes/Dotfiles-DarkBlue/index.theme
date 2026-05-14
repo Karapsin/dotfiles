@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=X-GNOME-Metatheme
+Name=Dotfiles-DarkBlue
+Comment=Dark blue LightDM GTK greeter theme
+
+[X-GNOME-Metatheme]
+GtkTheme=Dotfiles-DarkBlue
+IconTheme=Adwaita
+CursorTheme=Adwaita

@@ -77,10 +77,23 @@ systemctl --user start wallpaper-cycle.timer
 systemctl --user start wallpaper-cycle.service || true
 
 if [[ "$WITH_LIGHTDM" -eq 1 ]]; then
-  echo "[7/7] Installing LightDM sync units (system) + setting greeter background..."
+  echo "[7/7] Installing LightDM sync units, theme, and greeter config..."
   sudo install -d /usr/share/backgrounds
   sudo install -m 0644 "$DOTFILES_DIR/root/etc/systemd/system/wallpaper-login-copy@.service" /etc/systemd/system/
   sudo install -m 0644 "$DOTFILES_DIR/root/etc/systemd/system/wallpaper-login-copy@.timer"   /etc/systemd/system/
+  sudo cp -n /etc/lightdm/lightdm-gtk-greeter.conf /etc/lightdm/lightdm-gtk-greeter.conf.bak 2>/dev/null || true
+  sudo install -Dm644 \
+    "$DOTFILES_DIR/root/etc/lightdm/lightdm-gtk-greeter.conf" \
+    /etc/lightdm/lightdm-gtk-greeter.conf
+  sudo install -Dm644 \
+    "$DOTFILES_DIR/root/etc/lightdm/lightdm.conf.d/50-dotfiles-greeter.conf" \
+    /etc/lightdm/lightdm.conf.d/50-dotfiles-greeter.conf
+  sudo install -Dm644 \
+    "$DOTFILES_DIR/root/usr/share/themes/Dotfiles-DarkBlue/index.theme" \
+    /usr/share/themes/Dotfiles-DarkBlue/index.theme
+  sudo install -Dm644 \
+    "$DOTFILES_DIR/root/usr/share/themes/Dotfiles-DarkBlue/gtk-3.0/gtk.css" \
+    /usr/share/themes/Dotfiles-DarkBlue/gtk-3.0/gtk.css
   sudo systemctl daemon-reload
   sudo systemctl enable --now "wallpaper-login-copy@${USER}.timer"
 
@@ -96,12 +109,6 @@ if [[ "$WITH_LIGHTDM" -eq 1 ]]; then
     echo "background=/usr/share/backgrounds/current_wallpaper.png" | sudo tee -a /etc/lightdm/slick-greeter.conf >/dev/null
   fi
 
-  # Set background for gtk-greeter if config exists
-  if [[ -f /etc/lightdm/lightdm-gtk-greeter.conf ]]; then
-    sudo cp -n /etc/lightdm/lightdm-gtk-greeter.conf /etc/lightdm/lightdm-gtk-greeter.conf.bak || true
-    sudo sed -i '/^background=/d' /etc/lightdm/lightdm-gtk-greeter.conf
-    echo "background=/usr/share/backgrounds/current_wallpaper.png" | sudo tee -a /etc/lightdm/lightdm-gtk-greeter.conf >/dev/null
-  fi
 fi
 
 echo "Done."

@@ -59,6 +59,9 @@ choice="$(
       -no-custom \
       -no-sort \
       -no-show-icons \
+      -hover-select \
+      -me-select-entry "" \
+      -me-accept-entry MousePrimary \
       -kb-custom-1 "$screenshot_keys" \
       -kb-cancel "$cancel_keys" \
       -p "" \

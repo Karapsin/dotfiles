@@ -82,26 +82,37 @@ if [[ $WITH_LIGHTDM -eq 1 ]]; then
     exit 1
   fi
 
-  echo "[5/5] Installing LightDM packages and wallpaper sync units..."
+  echo "[5/5] Installing LightDM packages, greeter theme, and wallpaper sync units..."
   pacman "${PACMAN_INSTALL_ARGS[@]}" "${LIGHTDM_PACKAGES[@]}"
 
+  install -d /usr/share/backgrounds
   install -Dm644 \
     "$DOTFILES_DIR/root/etc/systemd/system/wallpaper-login-copy@.service" \
     /etc/systemd/system/wallpaper-login-copy@.service
   install -Dm644 \
     "$DOTFILES_DIR/root/etc/systemd/system/wallpaper-login-copy@.timer" \
     /etc/systemd/system/wallpaper-login-copy@.timer
+  if [[ -f /etc/lightdm/lightdm-gtk-greeter.conf && ! -f /etc/lightdm/lightdm-gtk-greeter.conf.bak ]]; then
+    cp -p /etc/lightdm/lightdm-gtk-greeter.conf /etc/lightdm/lightdm-gtk-greeter.conf.bak
+  fi
+  install -Dm644 \
+    "$DOTFILES_DIR/root/etc/lightdm/lightdm-gtk-greeter.conf" \
+    /etc/lightdm/lightdm-gtk-greeter.conf
+  install -Dm644 \
+    "$DOTFILES_DIR/root/etc/lightdm/lightdm.conf.d/50-dotfiles-greeter.conf" \
+    /etc/lightdm/lightdm.conf.d/50-dotfiles-greeter.conf
+  install -Dm644 \
+    "$DOTFILES_DIR/root/usr/share/themes/Dotfiles-DarkBlue/index.theme" \
+    /usr/share/themes/Dotfiles-DarkBlue/index.theme
+  install -Dm644 \
+    "$DOTFILES_DIR/root/usr/share/themes/Dotfiles-DarkBlue/gtk-3.0/gtk.css" \
+    /usr/share/themes/Dotfiles-DarkBlue/gtk-3.0/gtk.css
   systemctl daemon-reload
 
   if [[ -n "$BOOTSTRAP_USER" ]]; then
     systemctl enable --now "wallpaper-login-copy@${BOOTSTRAP_USER}.timer"
   else
     echo "Skipping wallpaper-login-copy timer enable: no non-root target user detected."
-  fi
-
-  if [[ -f /etc/lightdm/lightdm-gtk-greeter.conf ]]; then
-    sed -i '/^background=/d' /etc/lightdm/lightdm-gtk-greeter.conf
-    printf 'background=/usr/share/backgrounds/current_wallpaper.png\n' >> /etc/lightdm/lightdm-gtk-greeter.conf
   fi
 else
   echo "[5/5] Skipping LightDM wallpaper integration (pass --with-lightdm to enable it)."

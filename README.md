@@ -60,7 +60,7 @@ The direct scripts remain valid entrypoints for compatibility.
 - sets the X11 keyboard baseline to `us,ru` with `Win+Space`
 - enables linger for the target user when possible
 - optionally enables `NetworkManager`
-- optionally installs LightDM packages from [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt) and the wallpaper sync units
+- optionally installs LightDM packages from [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt), the dark blue GTK greeter theme, and the wallpaper sync units
 
 `bootstrap-user.sh`:
 - backs up unmanaged target files that would conflict with Stow links
