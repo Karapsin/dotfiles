@@ -43,7 +43,7 @@ run_bash_syntax_checks() {
   local script
   local failed=0
 
-  echo "[1/5] Checking shell syntax..."
+  echo "[1/8] Checking shell syntax..."
   while IFS= read -r -d '' script; do
     if ! bash -n "$script"; then
       failed=1
@@ -57,7 +57,7 @@ verify_stow_package_dirs() {
   local package
   local failed=0
 
-  echo "[2/5] Verifying listed stow package directories..."
+  echo "[2/8] Verifying listed stow package directories..."
   for package in "${STOW_PACKAGES[@]}"; do
     if [[ ! -d "$DOTFILES_DIR/$package" ]]; then
       echo "Missing stow package directory: $package" >&2
@@ -73,7 +73,7 @@ find_unlisted_stow_like_dirs() {
   local name
   local failed=0
 
-  echo "[3/5] Checking for unlisted top-level stow-like directories..."
+  echo "[3/8] Checking for unlisted top-level stow-like directories..."
   while IFS= read -r -d '' dir; do
     name="$(basename -- "$dir")"
 
@@ -94,7 +94,7 @@ run_stow_dry_runs() {
   local failed=0
   local tmp_target
 
-  echo "[4/5] Running stow dry-runs..."
+  echo "[4/8] Running stow dry-runs..."
   require_command stow
   tmp_target="$(mktemp -d)"
   trap 'rm -rf "$tmp_target"' RETURN
@@ -115,11 +115,70 @@ run_stow_dry_runs() {
   [[ $failed -eq 0 ]]
 }
 
+run_desktop_file_checks() {
+  local desktop_file
+  local failed=0
+
+  echo "[5/8] Validating desktop entries..."
+  if ! command -v desktop-file-validate >/dev/null 2>&1; then
+    echo "Skipping desktop entry validation: desktop-file-validate is unavailable."
+    return 0
+  fi
+
+  while IFS= read -r -d '' desktop_file; do
+    if ! desktop-file-validate "$desktop_file"; then
+      failed=1
+    fi
+  done < <(find "$DOTFILES_DIR" -path "$DOTFILES_DIR/.git" -prune -o -type f -name '*.desktop' -print0)
+
+  [[ $failed -eq 0 ]]
+}
+
+run_python_syntax_checks() {
+  local script
+  local failed=0
+  local python_scripts=()
+
+  echo "[6/8] Checking Python syntax..."
+  require_command python
+
+  while IFS= read -r -d '' script; do
+    python_scripts+=("$script")
+  done < <(find "$DOTFILES_DIR" -path "$DOTFILES_DIR/.git" -prune -o -type f -name '*.py' -print0)
+
+  if [[ -f "$DOTFILES_DIR/home/.local/bin/drawing" ]]; then
+    python_scripts+=("$DOTFILES_DIR/home/.local/bin/drawing")
+  fi
+
+  for script in "${python_scripts[@]}"; do
+    if ! python -m py_compile "$script"; then
+      failed=1
+    fi
+  done
+
+  [[ $failed -eq 0 ]]
+}
+
+run_drawing_compatibility_check() {
+  local wrapper="$DOTFILES_DIR/home/.local/bin/drawing"
+
+  echo "[7/8] Checking Drawing wrapper compatibility..."
+  if [[ ! -f "$wrapper" ]]; then
+    return 0
+  fi
+  if [[ ! -d /usr/share/drawing/drawing ]]; then
+    echo "Skipping Drawing compatibility check: Drawing is not installed."
+    return 0
+  fi
+
+  GSETTINGS_BACKEND=memory DOTFILES_DRAWING_SMOKE=1 python "$wrapper"
+}
+
 run_shellcheck_if_available() {
   local script
   local failed=0
 
-  echo "[5/5] Running shellcheck if available..."
+  echo "[8/8] Running shellcheck if available..."
   if ! command -v shellcheck >/dev/null 2>&1; then
     echo "Skipping shellcheck: shellcheck is unavailable."
     return 0
@@ -145,6 +204,9 @@ run_bash_syntax_checks
 verify_stow_package_dirs
 find_unlisted_stow_like_dirs
 run_stow_dry_runs
+run_desktop_file_checks
+run_python_syntax_checks
+run_drawing_compatibility_check
 run_shellcheck_if_available
 
 echo

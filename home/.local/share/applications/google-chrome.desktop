@@ -4,7 +4,7 @@ Name=Google Chrome
 GenericName=Web Browser
 Comment=Access the Internet
 StartupWMClass=Google-chrome
-Exec=sh -c "exec \"\\$HOME/.local/bin/google-chrome-dotfiles\" \"\\$@\"" google-chrome-dotfiles %U
+Exec=sh -lc "exec ~/.local/bin/google-chrome-dotfiles \"\\$@\"" google-chrome-dotfiles %U
 StartupNotify=true
 Terminal=false
 Icon=google-chrome
@@ -15,8 +15,8 @@ Actions=new-window;new-private-window;
 
 [Desktop Action new-window]
 Name=New Window
-Exec=sh -c "exec \"\\$HOME/.local/bin/google-chrome-dotfiles\" \"\\$@\"" google-chrome-dotfiles
+Exec=sh -lc "exec ~/.local/bin/google-chrome-dotfiles \"\\$@\"" google-chrome-dotfiles
 
 [Desktop Action new-private-window]
 Name=New Incognito Window
-Exec=sh -c "exec \"\\$HOME/.local/bin/google-chrome-dotfiles\" --incognito \"\\$@\"" google-chrome-dotfiles
+Exec=sh -lc "exec ~/.local/bin/google-chrome-dotfiles --incognito \"\\$@\"" google-chrome-dotfiles

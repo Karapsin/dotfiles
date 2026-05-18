@@ -4,12 +4,45 @@ import gettext
 import locale
 import math
 import os
+import re
 import signal
 import sys
 
 VERSION = "1.0.2"
+UPSTREAM_DRAWING_BIN = "/usr/bin/drawing"
 PKG_DATA_DIR = "/usr/share/drawing"
 LOCALE_DIR = "/usr/share/locale"
+
+
+def _upstream_drawing_version():
+    try:
+        with open(UPSTREAM_DRAWING_BIN, "r", encoding="utf-8") as handle:
+            source = handle.read()
+    except OSError:
+        return None
+
+    match = re.search(r"VERSION\s*=\s*['\"]([^'\"]+)['\"]", source)
+    if match is None:
+        return None
+    return match.group(1)
+
+
+def _run_upstream_drawing(reason):
+    print(
+        "Dotfiles Drawing tweaks disabled: " + reason,
+        file=sys.stderr,
+    )
+    if os.path.exists(UPSTREAM_DRAWING_BIN):
+        try:
+            if not os.path.samefile(UPSTREAM_DRAWING_BIN, __file__):
+                os.execv(UPSTREAM_DRAWING_BIN, [UPSTREAM_DRAWING_BIN] + sys.argv[1:])
+        except OSError:
+            os.execv(UPSTREAM_DRAWING_BIN, [UPSTREAM_DRAWING_BIN] + sys.argv[1:])
+
+    print("Falling back to unpatched Drawing module entrypoint.", file=sys.stderr)
+    from drawing import main
+
+    sys.exit(main.main(_upstream_drawing_version() or VERSION))
 
 locale.bindtextdomain("drawing", LOCALE_DIR)
 sys.path.insert(1, PKG_DATA_DIR)
@@ -18,21 +51,94 @@ gettext.install("drawing", LOCALE_DIR)
 
 import gi
 
-import cairo
+try:
+    import cairo
 
-gi.require_version("Gtk", "3.0")
-gi.require_version("Gdk", "3.0")
-gi.require_version("PangoCairo", "1.0")
-from gi.repository import Gio, Gdk, GLib, Gtk
+    gi.require_version("Gtk", "3.0")
+    gi.require_version("Gdk", "3.0")
+    gi.require_version("PangoCairo", "1.0")
+    from gi.repository import Gio, Gdk, GLib, Gtk
 
-resource = Gio.Resource.load(os.path.join(PKG_DATA_DIR, "drawing.gresource"))
-resource._register()
+    resource = Gio.Resource.load(os.path.join(PKG_DATA_DIR, "drawing.gresource"))
+    resource._register()
 
-from drawing import image as drawing_image
-from drawing import abstract_select as drawing_abstract_select
-from drawing import selection_manager as drawing_selection_manager
-from drawing import tool_rotate as drawing_tool_rotate
-from drawing import window as drawing_window
+    from drawing import image as drawing_image
+    from drawing import abstract_select as drawing_abstract_select
+    from drawing import selection_manager as drawing_selection_manager
+    from drawing import tool_rotate as drawing_tool_rotate
+    from drawing import window as drawing_window
+except Exception as exc:
+    message = "could not load expected Drawing internals: " + str(exc)
+    if os.environ.get("DOTFILES_DRAWING_SMOKE") == "1":
+        print(message, file=sys.stderr)
+        sys.exit(1)
+    _run_upstream_drawing(message)
+
+
+def _drawing_compatibility_error():
+    upstream_version = _upstream_drawing_version()
+    if upstream_version is not None and upstream_version != VERSION:
+        return (
+            "installed Drawing version "
+            + upstream_version
+            + " has not been reviewed for tweaks version "
+            + VERSION
+        )
+
+    required_methods = (
+        (
+            drawing_image.DrImage,
+            "DrImage",
+            (
+                "on_draw",
+                "on_press_on_area",
+                "on_motion_on_area",
+                "on_release_on_area",
+                "on_leave_image",
+            ),
+        ),
+        (drawing_abstract_select.AbstractSelectionTool, "AbstractSelectionTool", ("on_draw_above",)),
+        (
+            drawing_tool_rotate.ToolRotate,
+            "ToolRotate",
+            (
+                "on_draw_above",
+                "build_operation",
+                "do_tool_operation",
+                "on_left_clicked",
+                "on_right_clicked",
+                "on_horizontal_clicked",
+                "on_vertical_clicked",
+                "on_release_on_area",
+            ),
+        ),
+        (drawing_selection_manager.DrSelectionManager, "DrSelectionManager", ("__init__",)),
+        (drawing_window.DrWindow, "DrWindow", ("add_all_win_actions", "set_tools_labels_visibility")),
+    )
+    for owner, owner_name, method_names in required_methods:
+        for method_name in method_names:
+            if not callable(getattr(owner, method_name, None)):
+                return owner_name + "." + method_name + " is unavailable"
+
+    try:
+        resource.lookup_data(
+            "/com/github/maoschanz/drawing/ui/selection-manager.ui",
+            Gio.ResourceLookupFlags.NONE,
+        )
+    except Exception as exc:
+        return "selection-manager.ui resource is unavailable: " + str(exc)
+
+    return None
+
+
+_compatibility_error = _drawing_compatibility_error()
+if os.environ.get("DOTFILES_DRAWING_SMOKE") == "1":
+    if _compatibility_error is not None:
+        print(_compatibility_error, file=sys.stderr)
+        sys.exit(1)
+    sys.exit(0)
+if _compatibility_error is not None:
+    _run_upstream_drawing(_compatibility_error)
 
 
 HANDLE_SIZE = 9
@@ -765,6 +871,8 @@ def _selection_rotation_menu_model():
 
 
 def _active_selection_menu_model():
+    # This mirrors Drawing 1.0.2's active selection menu. If upstream changes
+    # that resource, the compatibility gate above disables these tweaks first.
     menu = Gio.Menu()
     _append_section(menu, [_menu_item(_("Deselect"), "win.unselect")])
     _append_section(

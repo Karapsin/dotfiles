@@ -141,20 +141,25 @@ static void close_pavucontrol(void) {
 
 static void open_pavucontrol(void) {
   const char *home = getenv("HOME");
-  const char *command = "/usr/bin/pavucontrol";
   char local_command[4096];
 
   if (home != NULL) {
     snprintf(local_command, sizeof(local_command), "%s/.local/bin/pavucontrol", home);
     if (access(local_command, X_OK) == 0) {
-      command = local_command;
+      pid_t pid = fork();
+      if (pid == 0) {
+        setsid();
+        execl(local_command, local_command, "--tab=1", (char *)NULL);
+        _exit(127);
+      }
+      return;
     }
   }
 
   pid_t pid = fork();
   if (pid == 0) {
     setsid();
-    execl(command, command, "--tab=1", (char *)NULL);
+    execlp("pavucontrol", "pavucontrol", "--tab=1", (char *)NULL);
     _exit(127);
   }
 }
