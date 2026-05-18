@@ -148,19 +148,19 @@ keyboard layout switching through the custom XKB setup.
 
 | Shortcut | Action |
 | --- | --- |
+| `$mod+1` through `$mod+0` | Switch to workspace 1 through 10 |
+| `$mod+Shift+1` through `$mod+Shift+0` | Move focused window to workspace 1 through 10 |
+| `$mod+j/k/l/;` or `$mod+arrow keys` | Move focus left/down/up/right |
+| `$mod+Shift+j/k/l/;` or `$mod+Shift+arrow keys` | Move the focused window left/down/up/right |
+| `$mod+f` | Toggle fullscreen |
+| `$mod+r` | Enter resize mode |
+| resize mode: `j/k/l/;` or arrow keys | Resize the focused window |
+| resize mode: `Enter`, `Escape`, or `$mod+r` | Return to normal mode |
 | `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` | Raise or lower volume by 5% |
 | `XF86AudioMute` | Toggle audio mute |
 | `$mod+Shift+r` | Restart i3 |
 | `$mod+Shift+q` | Close the focused window |
-| `$mod+j/k/l/;` or `$mod+arrow keys` | Move focus left/down/up/right |
-| `$mod+Shift+j/k/l/;` or `$mod+Shift+arrow keys` | Move the focused window left/down/up/right |
 | `$mod+h` / `$mod+v` | Split next container vertically or horizontally |
-| `$mod+f` | Toggle fullscreen |
 | `$mod+s` / `$mod+w` / `$mod+e` | Use stacking, tabbed, or split layout |
 | `$mod+Shift+Space` | Toggle floating mode |
 | `$mod+a` | Focus parent container |
-| `$mod+1` through `$mod+0` | Switch to workspace 1 through 10 |
-| `$mod+Shift+1` through `$mod+Shift+0` | Move focused window to workspace 1 through 10 |
-| `$mod+r` | Enter resize mode |
-| resize mode: `j/k/l/;` or arrow keys | Resize the focused window |
-| resize mode: `Enter`, `Escape`, or `$mod+r` | Return to normal mode |
