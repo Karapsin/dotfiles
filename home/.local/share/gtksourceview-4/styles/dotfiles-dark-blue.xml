@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<style-scheme id="dotfiles-dark-blue" _name="Dotfiles Dark Blue" version="1.0">
+  <author>kardinal dotfiles</author>
+  <_description>Dark blue editor colors matching the i3 desktop theme.</_description>
+
+  <color name="bg" value="#0c1116"/>
+  <color name="panel" value="#111820"/>
+  <color name="panel2" value="#17212b"/>
+  <color name="line" value="#243341"/>
+  <color name="border" value="#2f475b"/>
+  <color name="accent" value="#3a607d"/>
+  <color name="accent2" value="#65a6d9"/>
+  <color name="text" value="#d7dde4"/>
+  <color name="muted" value="#8a949e"/>
+  <color name="dim" value="#66727d"/>
+  <color name="green" value="#8fbf8f"/>
+  <color name="yellow" value="#d7ba7d"/>
+  <color name="orange" value="#d49a6a"/>
+  <color name="red" value="#d26a6a"/>
+  <color name="purple" value="#b48ead"/>
+  <color name="cyan" value="#86c1d4"/>
+  <color name="white" value="#ffffff"/>
+
+  <style name="text" foreground="text" background="bg"/>
+  <style name="selection" foreground="white" background="accent"/>
+  <style name="cursor" foreground="accent2"/>
+  <style name="secondary-cursor" foreground="muted"/>
+  <style name="current-line" background="panel2"/>
+  <style name="line-numbers" foreground="dim" background="panel"/>
+  <style name="draw-spaces" foreground="dim"/>
+  <style name="background-pattern" background="panel"/>
+  <style name="right-margin" foreground="border" background="panel"/>
+  <style name="search-match" foreground="white" background="accent"/>
+
+  <style name="bracket-match" foreground="white" background="border"/>
+  <style name="bracket-mismatch" foreground="white" background="red"/>
+
+  <style name="def:comment" foreground="muted" italic="true"/>
+  <style name="def:shebang" foreground="muted" italic="true"/>
+  <style name="def:doc-comment-element" foreground="cyan"/>
+  <style name="def:constant" foreground="yellow"/>
+  <style name="def:string" foreground="green"/>
+  <style name="def:special-char" foreground="orange"/>
+  <style name="def:special-constant" foreground="orange"/>
+  <style name="def:number" foreground="orange"/>
+  <style name="def:floating-point" foreground="orange"/>
+  <style name="def:boolean" foreground="orange"/>
+  <style name="def:identifier" foreground="text"/>
+  <style name="def:function" foreground="accent2"/>
+  <style name="def:statement" foreground="accent2" bold="true"/>
+  <style name="def:keyword" foreground="accent2" bold="true"/>
+  <style name="def:builtin" foreground="cyan"/>
+  <style name="def:type" foreground="cyan"/>
+  <style name="def:preprocessor" foreground="purple"/>
+  <style name="def:error" foreground="white" background="red" bold="true"/>
+  <style name="def:warning" foreground="bg" background="yellow"/>
+  <style name="def:note" foreground="bg" background="accent2"/>
+  <style name="def:net-address" foreground="cyan" underline="single"/>
+
+  <style name="def:emphasis" italic="true"/>
+  <style name="def:strong-emphasis" bold="true"/>
+  <style name="def:inline-code" foreground="cyan"/>
+  <style name="def:link-text" foreground="accent2"/>
+  <style name="def:link-symbol" foreground="accent2"/>
+  <style name="def:link-destination" foreground="green" underline="single"/>
+  <style name="def:heading" foreground="accent2" bold="true"/>
+  <style name="def:thematic-break" foreground="accent"/>
+  <style name="def:list-marker" foreground="yellow"/>
+
+  <style name="diff:added-line" foreground="green"/>
+  <style name="diff:removed-line" foreground="red"/>
+  <style name="diff:changed-line" foreground="yellow"/>
+  <style name="diff:diff-file" foreground="accent2" bold="true"/>
+  <style name="diff:location" foreground="cyan"/>
+</style-scheme>

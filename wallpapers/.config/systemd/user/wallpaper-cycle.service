@@ -4,3 +4,4 @@ Description=Wallpaper cycle (theme+time based)
 [Service]
 Type=oneshot
 ExecStart=%h/.wallpapers/bin/wallpaper_cycle.py
+ExecStartPost=%h/.wallpapers/bin/update_betterlockscreen_cache.sh

@@ -1,0 +1,1210 @@
+#!/usr/bin/python
+
+import gettext
+import locale
+import math
+import os
+import signal
+import sys
+
+VERSION = "1.0.2"
+PKG_DATA_DIR = "/usr/share/drawing"
+LOCALE_DIR = "/usr/share/locale"
+
+locale.bindtextdomain("drawing", LOCALE_DIR)
+sys.path.insert(1, PKG_DATA_DIR)
+signal.signal(signal.SIGINT, signal.SIG_DFL)
+gettext.install("drawing", LOCALE_DIR)
+
+import gi
+
+import cairo
+
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+gi.require_version("PangoCairo", "1.0")
+from gi.repository import Gio, Gdk, GLib, Gtk
+
+resource = Gio.Resource.load(os.path.join(PKG_DATA_DIR, "drawing.gresource"))
+resource._register()
+
+from drawing import image as drawing_image
+from drawing import abstract_select as drawing_abstract_select
+from drawing import selection_manager as drawing_selection_manager
+from drawing import tool_rotate as drawing_tool_rotate
+from drawing import window as drawing_window
+
+
+HANDLE_SIZE = 9
+HANDLE_HIT_SIZE = 12
+ROTATE_HANDLE_SIZE = 13
+ROTATE_HANDLE_HIT_SIZE = 18
+ROTATE_HANDLE_OFFSET = 28
+ROTATE_SNAP_DEGREES = 15
+ROTATE_FILL_RGBA = (1.0, 1.0, 1.0, 1.0)
+ROTATE_MENU_ANGLES = tuple(range(45, 361, 45))
+SELECTION_TOOL_IDS = {"rect_select", "free_select", "color_select"}
+TOOLS_COLUMNS = 2
+TOOLS_PANEL_WIDTH = 74
+
+
+def _handle_size(image):
+    return max(4.0, HANDLE_SIZE / image.zoom_level)
+
+
+def _hit_tolerance(image):
+    return max(5.0, HANDLE_HIT_SIZE / image.zoom_level)
+
+
+def _handle_centers(image, width=None, height=None):
+    width = image.get_pixbuf_width() if width is None else width
+    height = image.get_pixbuf_height() if height is None else height
+    return {
+        "e": (width, height / 2),
+        "s": (width / 2, height),
+        "se": (width, height),
+    }
+
+
+def _handle_at_event(image, event):
+    if not hasattr(image, "main_pixbuf") or image.main_pixbuf is None:
+        return None
+    x, y = image.get_event_coords(event, as_integers=False)
+    tolerance = _hit_tolerance(image)
+    centers = _handle_centers(image)
+    for mode in ("se", "e", "s"):
+        cx, cy = centers[mode]
+        if abs(x - cx) <= tolerance and abs(y - cy) <= tolerance:
+            return mode
+    return None
+
+
+def _has_active_selection(image):
+    if not hasattr(image, "selection"):
+        return False
+    if not image.selection.is_active:
+        return False
+    return image.selection.get_pixbuf() is not None
+
+
+def _selection_rotation_available(image):
+    if not _has_active_selection(image):
+        return False
+    if "rotate" not in image.window.tools:
+        return False
+    active_tool_id = getattr(image.window, "active_tool_id", None)
+    return active_tool_id in SELECTION_TOOL_IDS
+
+
+def _selection_bounds(image):
+    selection = image.selection
+    pixbuf = selection.get_pixbuf()
+    return (
+        selection.selection_x,
+        selection.selection_y,
+        pixbuf.get_width(),
+        pixbuf.get_height(),
+    )
+
+
+def _rotate_handle_center(image, bounds=None):
+    geometry = _rotation_handle_geometry(image)
+    if geometry is not None:
+        _anchor_x, _anchor_y, handle_x, handle_y = geometry
+        return handle_x, handle_y
+
+    if bounds is None:
+        bounds = _selection_bounds(image)
+    x, y, width, height = bounds
+    gap = ROTATE_HANDLE_OFFSET / image.zoom_level
+    margin = (ROTATE_HANDLE_SIZE + 4) / image.zoom_level
+    handle_y = y - gap
+    if handle_y < image.scroll_y + margin:
+        handle_y = y + height + gap
+    return x + (width / 2), handle_y
+
+
+def _rotate_handle_at_event(image, event):
+    if not _selection_rotation_available(image):
+        return False
+    event_x, event_y = image.get_event_coords(event, as_integers=False)
+    center_x, center_y = _rotate_handle_center(image)
+    tolerance = max(6.0, ROTATE_HANDLE_HIT_SIZE / image.zoom_level)
+    return math.hypot(event_x - center_x, event_y - center_y) <= tolerance
+
+
+def _set_canvas_cursor(image, cursor_name):
+    cursor = Gdk.Cursor.new_from_name(Gdk.Display.get_default(), cursor_name)
+    image.window.get_window().set_cursor(cursor)
+
+
+def _cursor_for_mode(mode):
+    if mode == "se":
+        return "se-resize"
+    if mode == "e":
+        return "e-resize"
+    return "s-resize"
+
+
+def _resize_operation(image, width, height):
+    return {
+        "tool_id": "crop",
+        "is_selection": False,
+        "is_preview": False,
+        "is_etf": False,
+        "local_dx": 0,
+        "local_dy": 0,
+        "width": max(1, int(width)),
+        "height": max(1, int(height)),
+        "rgba": image.get_initial_rgba(),
+    }
+
+
+def _apply_canvas_resize(image, width, height):
+    width = max(1, int(width))
+    height = max(1, int(height))
+    if width == image.get_pixbuf_width() and height == image.get_pixbuf_height():
+        return
+
+    crop_tool = image.window.tools.get("crop")
+    if crop_tool is None:
+        return
+
+    crop_tool.simple_apply_operation(_resize_operation(image, width, height))
+    image.fake_scrollbar_update()
+    image.update_actions_state()
+    image.update_history_sensitivity()
+    image.window.update_picture_title()
+    image.window.set_window_subtitles()
+
+
+def _preview_size(image, event):
+    event_x, event_y = image.get_event_coords(event, as_integers=False)
+    delta_x = event_x - image._paint_resize_press_x
+    delta_y = event_y - image._paint_resize_press_y
+    width = image._paint_resize_origin_w
+    height = image._paint_resize_origin_h
+
+    if "e" in image._paint_resize_mode:
+        width += delta_x
+    if "s" in image._paint_resize_mode:
+        height += delta_y
+
+    return max(1, int(width)), max(1, int(height))
+
+
+def _normalize_rotation_angle(angle):
+    return angle % 360
+
+
+def _rotation_matrix(angle, width, height):
+    rad = math.pi * angle / 180
+    xx = math.cos(rad)
+    xy = math.sin(rad)
+    yx = -1 * math.sin(rad)
+    yy = math.cos(rad)
+    x0 = max(0, height * yx)
+    y0 = max(0, width * xy)
+    return xx, yx, xy, yy, x0, y0
+
+
+def _rotated_size(width, height, angle):
+    angle = _normalize_rotation_angle(angle)
+    gdk_rotation = int(angle / 90) * 90
+    cairo_rotation = angle % 90
+
+    if gdk_rotation in (90, 270):
+        width, height = height, width
+    if cairo_rotation == 0:
+        return width, height
+
+    rad = math.pi * cairo_rotation / 180
+    cos_v = math.cos(rad)
+    sin_v = math.sin(rad)
+    return (
+        max(1, int((cos_v * width) + (sin_v * height))),
+        max(1, int((sin_v * width) + (cos_v * height))),
+    )
+
+
+def _rotation_deltas(width, height, angle):
+    rotated_w, rotated_h = _rotated_size(width, height, angle)
+    return (
+        int(round((width - rotated_w) / 2)),
+        int(round((height - rotated_h) / 2)),
+    )
+
+
+def _deformed_surface(source_surface, coefs, fill_rgba=None):
+    xx, yx, xy, yy, x0, y0 = coefs
+    source_w = source_surface.get_width()
+    source_h = source_surface.get_height()
+    width = max(1, int((xx * source_w) + (xy * source_h) + (x0 * 2)))
+    height = max(1, int((yx * source_w) + (yy * source_h) + (y0 * 2)))
+    surface = cairo.ImageSurface(cairo.Format.ARGB32, width, height)
+    context = cairo.Context(surface)
+    if fill_rgba is not None:
+        context.set_operator(cairo.Operator.SOURCE)
+        context.set_source_rgba(*fill_rgba)
+        context.paint()
+        context.set_operator(cairo.Operator.OVER)
+    context.transform(cairo.Matrix(xx=xx, yx=yx, xy=xy, yy=yy, x0=x0, y0=y0))
+    context.set_source_surface(source_surface, 0, 0)
+    context.paint()
+    return surface
+
+
+def _rotate_pixbuf(image, source_pixbuf, angle, fill_rgba=None):
+    angle = _normalize_rotation_angle(angle)
+    gdk_rotation = int(angle / 90) * 90
+    cairo_rotation = angle % 90
+    if gdk_rotation == 0:
+        new_pixbuf = source_pixbuf.copy()
+    else:
+        new_pixbuf = source_pixbuf.rotate_simple(gdk_rotation)
+
+    if cairo_rotation == 0:
+        return new_pixbuf
+
+    surface = Gdk.cairo_surface_create_from_pixbuf(new_pixbuf, 0, None)
+    surface.set_device_scale(image.SCALE_FACTOR, image.SCALE_FACTOR)
+    coefs = _rotation_matrix(cairo_rotation, surface.get_width(), surface.get_height())
+    new_surface = _deformed_surface(surface, coefs, fill_rgba)
+    return Gdk.pixbuf_get_from_surface(
+        new_surface,
+        0,
+        0,
+        new_surface.get_width(),
+        new_surface.get_height(),
+    )
+
+
+def _rotate_point(x, y, center_x, center_y, angle):
+    rad = math.pi * _normalize_rotation_angle(angle) / 180
+    dx = x - center_x
+    dy = y - center_y
+    return (
+        center_x + (math.cos(rad) * dx) + (math.sin(rad) * dy),
+        center_y - (math.sin(rad) * dx) + (math.cos(rad) * dy),
+    )
+
+
+def _map_path(image, path, transform_point):
+    context = cairo.Context(image.surface)
+    context.new_path()
+    for path_type, points in path:
+        if path_type == cairo.PathDataType.MOVE_TO:
+            context.move_to(*transform_point(points[0], points[1]))
+        elif path_type == cairo.PathDataType.LINE_TO:
+            context.line_to(*transform_point(points[0], points[1]))
+        elif path_type == cairo.PathDataType.CURVE_TO:
+            x1, y1 = transform_point(points[0], points[1])
+            x2, y2 = transform_point(points[2], points[3])
+            x3, y3 = transform_point(points[4], points[5])
+            context.curve_to(x1, y1, x2, y2, x3, y3)
+        elif path_type == cairo.PathDataType.CLOSE_PATH:
+            context.close_path()
+    return context.copy_path()
+
+
+def _transformed_selection_path(image, angle, flip_h=False, flip_v=False, with_scroll=False):
+    selection = image.selection
+    source_path = selection.selection_path
+    if source_path is None:
+        return None
+
+    pixbuf = selection.get_pixbuf()
+    left = selection.selection_x
+    top = selection.selection_y
+    width = pixbuf.get_width()
+    height = pixbuf.get_height()
+    center_x = left + (width / 2)
+    center_y = top + (height / 2)
+    offset_x = selection.selection_x - selection.temp_x
+    offset_y = selection.selection_y - selection.temp_y
+
+    def transform_point(x, y):
+        x += offset_x
+        y += offset_y
+        if flip_h:
+            x = (left + width) - (x - left)
+        if flip_v:
+            y = (top + height) - (y - top)
+        x, y = _rotate_point(x, y, center_x, center_y, angle)
+        if with_scroll:
+            x -= image.scroll_x
+            y -= image.scroll_y
+        return x, y
+
+    return _map_path(image, source_path, transform_point)
+
+
+def _draw_path_overlay(context, path, thickness):
+    if path is None:
+        return
+    context.save()
+    context.new_path()
+    context.set_antialias(cairo.Antialias.NONE)
+    context.set_line_width(thickness)
+    context.set_dash([thickness * 3, thickness * 3])
+    context.append_path(path)
+    context.set_source_rgba(0.1, 0.1, 0.3, 0.2)
+    context.fill_preserve()
+    context.set_source_rgba(0.5, 0.5, 0.5, 0.5)
+    context.stroke()
+    context.restore()
+
+
+def _path_points(path):
+    points = []
+    if path is None:
+        return points
+    for path_type, path_points in path:
+        if path_type in (cairo.PathDataType.MOVE_TO, cairo.PathDataType.LINE_TO):
+            points.append((path_points[0], path_points[1]))
+        elif path_type == cairo.PathDataType.CURVE_TO:
+            points.append((path_points[4], path_points[5]))
+    return points
+
+
+def _first_path_edge(points):
+    if len(points) < 2:
+        return None
+    start_x, start_y = points[0]
+    for end_x, end_y in points[1:]:
+        if math.hypot(end_x - start_x, end_y - start_y) > 0.5:
+            return start_x, start_y, end_x, end_y
+    return None
+
+
+def _rotation_handle_geometry(image, path=None):
+    if path is None:
+        if not _has_active_selection(image):
+            return None
+        path = image.selection.selection_path
+
+    points = _path_points(path)
+    edge = _first_path_edge(points)
+    if edge is None:
+        return None
+
+    start_x, start_y, end_x, end_y = edge
+    anchor_x = (start_x + end_x) / 2
+    anchor_y = (start_y + end_y) / 2
+    center_x = sum(point[0] for point in points) / len(points)
+    center_y = sum(point[1] for point in points) / len(points)
+    edge_dx = end_x - start_x
+    edge_dy = end_y - start_y
+    length = math.hypot(edge_dx, edge_dy)
+    if length <= 0:
+        return None
+
+    normal_x = -edge_dy / length
+    normal_y = edge_dx / length
+    outward_x = anchor_x - center_x
+    outward_y = anchor_y - center_y
+    if (normal_x * outward_x) + (normal_y * outward_y) < 0:
+        normal_x *= -1
+        normal_y *= -1
+
+    gap = ROTATE_HANDLE_OFFSET / image.zoom_level
+    return anchor_x, anchor_y, anchor_x + (normal_x * gap), anchor_y + (normal_y * gap)
+
+
+def _relative_path(image, path, origin_x, origin_y):
+    def transform_point(x, y):
+        return x - origin_x, y - origin_y
+
+    return _map_path(image, path, transform_point)
+
+
+def _mask_pixbuf_to_path(image, pixbuf, absolute_path, origin_x, origin_y):
+    if absolute_path is None:
+        return pixbuf
+
+    width = pixbuf.get_width()
+    height = pixbuf.get_height()
+    source_surface = Gdk.cairo_surface_create_from_pixbuf(pixbuf, 0, None)
+    source_surface.set_device_scale(image.SCALE_FACTOR, image.SCALE_FACTOR)
+    surface = cairo.ImageSurface(cairo.Format.ARGB32, width, height)
+    context = cairo.Context(surface)
+    context.set_source_surface(source_surface, 0, 0)
+    context.paint()
+
+    context.set_operator(cairo.Operator.DEST_IN)
+    context.new_path()
+    context.append_path(_relative_path(image, absolute_path, origin_x, origin_y))
+    context.fill()
+    context.set_operator(cairo.Operator.OVER)
+
+    return Gdk.pixbuf_get_from_surface(surface, 0, 0, width, height)
+
+
+def _pointer_rotation_degrees(image, event):
+    event_x, event_y = image.get_event_coords(event, as_integers=False)
+    origin_x = image._paint_rotation_origin_x
+    origin_y = image._paint_rotation_origin_y
+    origin_w = image._paint_rotation_origin_w
+    origin_h = image._paint_rotation_origin_h
+    center_x = origin_x + (origin_w / 2)
+    center_y = origin_y + (origin_h / 2)
+    return math.degrees(math.atan2(event_x - center_x, center_y - event_y))
+
+
+def _rotation_angle_from_event(image, event):
+    pointer_angle = _pointer_rotation_degrees(image, event)
+    delta = pointer_angle - image._paint_rotation_press_angle
+    delta = ((delta + 180) % 360) - 180
+    angle = int(round(-delta))
+    if (event.state & Gdk.ModifierType.SHIFT_MASK) == Gdk.ModifierType.SHIFT_MASK:
+        angle = int(round(angle / ROTATE_SNAP_DEGREES) * ROTATE_SNAP_DEGREES)
+    return angle
+
+
+def _set_rotation_preview(image, angle):
+    source_pixbuf = image._paint_rotation_source_pixbuf
+    preview_pixbuf = _rotate_pixbuf(image, source_pixbuf, angle, ROTATE_FILL_RGBA)
+    origin_x = image._paint_rotation_origin_x
+    origin_y = image._paint_rotation_origin_y
+    origin_w = image._paint_rotation_origin_w
+    origin_h = image._paint_rotation_origin_h
+    preview_x = origin_x + int(round((origin_w - preview_pixbuf.get_width()) / 2))
+    preview_y = origin_y + int(round((origin_h - preview_pixbuf.get_height()) / 2))
+    preview_pixbuf = _mask_pixbuf_to_path(
+        image,
+        preview_pixbuf,
+        _transformed_selection_path(image, angle, False, False, False),
+        preview_x,
+        preview_y,
+    )
+
+    image._paint_rotation_angle = angle
+    image._paint_rotation_preview_pixbuf = preview_pixbuf
+    image._paint_rotation_preview_x = preview_x
+    image._paint_rotation_preview_y = preview_y
+
+
+def _begin_selection_rotation(image, event):
+    x, y, width, height = _selection_bounds(image)
+    image.selection.hide_popovers()
+    image._paint_rotation_mode = True
+    image._paint_rotation_origin_x = x
+    image._paint_rotation_origin_y = y
+    image._paint_rotation_origin_w = width
+    image._paint_rotation_origin_h = height
+    image._paint_rotation_source_pixbuf = image.selection.get_pixbuf().copy()
+    image._paint_rotation_press_angle = _pointer_rotation_degrees(image, event)
+    _set_rotation_preview(image, _rotation_angle_from_event(image, event))
+    image._is_pressed = True
+    _set_canvas_cursor(image, "grabbing")
+    image.update()
+
+
+def _selection_rotation_operation(image):
+    angle = getattr(image, "_paint_rotation_angle", 0)
+    return {
+        "tool_id": "rotate",
+        "is_selection": True,
+        "is_preview": False,
+        "local_dx": image._paint_rotation_preview_x - image._paint_rotation_origin_x,
+        "local_dy": image._paint_rotation_preview_y - image._paint_rotation_origin_y,
+        "angle": angle,
+        "flip_h": False,
+        "flip_v": False,
+        "fill_rgba": ROTATE_FILL_RGBA,
+    }
+
+
+def _clear_selection_rotation(image):
+    image._paint_rotation_mode = False
+    image._paint_rotation_hover = False
+    image._paint_rotation_source_pixbuf = None
+    image._paint_rotation_preview_pixbuf = None
+    image._paint_rotation_angle = 0
+
+
+def _finish_selection_rotation(image):
+    operation = _selection_rotation_operation(image)
+    should_apply = operation["angle"] % 360 != 0
+    _clear_selection_rotation(image)
+    image._is_pressed = False
+    image._drawing_area.set_tooltip_text(None)
+    image.window.set_cursor(False)
+    if not should_apply:
+        image.update()
+        return
+
+    rotate_tool = image.window.tools.get("rotate")
+    if rotate_tool is None:
+        image.update()
+        return
+    rotate_tool.apply_to_selection = True
+    rotate_tool.apply_operation(operation)
+    image.fake_scrollbar_update()
+    image.window.update_picture_title()
+    image.window.set_window_subtitles()
+
+
+def _draw_handle(context, image, center_x, center_y):
+    size = _handle_size(image)
+    x = center_x - image.scroll_x - (size / 2)
+    y = center_y - image.scroll_y - (size / 2)
+
+    context.rectangle(x, y, size, size)
+    context.set_source_rgb(0.96, 0.98, 1.0)
+    context.fill_preserve()
+    context.set_line_width(max(1.0 / image.zoom_level, 0.5))
+    context.set_source_rgb(0.42, 0.65, 0.85)
+    context.stroke()
+
+
+def _draw_rotation_chrome(image, context, bounds, draw_bounds):
+    x, y, width, height = bounds
+    line_width = max(1.0 / image.zoom_level, 0.5)
+    center_x = x + (width / 2)
+    handle_x, handle_y = _rotate_handle_center(image, bounds)
+    handle_is_below = handle_y > y + (height / 2)
+    anchor_y = y + height if handle_is_below else y
+    sx = x - image.scroll_x
+    sy = y - image.scroll_y
+    scx = center_x - image.scroll_x
+    stop_y = anchor_y - image.scroll_y
+    shx = handle_x - image.scroll_x
+    shy = handle_y - image.scroll_y
+    radius = max(5.5, (ROTATE_HANDLE_SIZE / image.zoom_level) / 2)
+
+    context.save()
+    context.set_line_width(line_width)
+    context.set_source_rgba(0.42, 0.65, 0.85, 0.9)
+
+    if draw_bounds:
+        context.set_dash([3 * line_width, 3 * line_width])
+        context.rectangle(sx, sy, width, height)
+        context.stroke()
+        context.set_dash([])
+
+    context.move_to(scx, stop_y)
+    context.line_to(shx, shy - radius if handle_is_below else shy + radius)
+    context.stroke()
+
+    context.arc(shx, shy, radius, 0, math.pi * 2)
+    context.set_source_rgb(0.96, 0.98, 1.0)
+    context.fill_preserve()
+    context.set_source_rgb(0.42, 0.65, 0.85)
+    context.stroke()
+
+    inner = radius * 0.52
+    start = math.radians(-135)
+    end = math.radians(145)
+    context.arc(shx, shy, inner, start, end)
+    context.stroke()
+    arrow_x = shx + (math.cos(end) * inner)
+    arrow_y = shy + (math.sin(end) * inner)
+    context.move_to(arrow_x, arrow_y)
+    context.line_to(arrow_x + (radius * 0.30), arrow_y - (radius * 0.02))
+    context.move_to(arrow_x, arrow_y)
+    context.line_to(arrow_x + (radius * 0.03), arrow_y + (radius * 0.30))
+    context.stroke()
+    context.restore()
+
+
+def _draw_rotation_handle_chrome(image, context, path=None):
+    geometry = _rotation_handle_geometry(image, path)
+    if geometry is None:
+        _draw_rotation_chrome(image, context, _selection_bounds(image), False)
+        return
+
+    anchor_x, anchor_y, handle_x, handle_y = geometry
+    line_width = max(1.0 / image.zoom_level, 0.5)
+    radius = max(5.5, (ROTATE_HANDLE_SIZE / image.zoom_level) / 2)
+    sax = anchor_x - image.scroll_x
+    say = anchor_y - image.scroll_y
+    shx = handle_x - image.scroll_x
+    shy = handle_y - image.scroll_y
+
+    context.save()
+    context.set_line_width(line_width)
+    context.set_source_rgba(0.42, 0.65, 0.85, 0.9)
+    context.move_to(sax, say)
+    context.line_to(shx, shy)
+    context.stroke()
+
+    context.arc(shx, shy, radius, 0, math.pi * 2)
+    context.set_source_rgb(0.96, 0.98, 1.0)
+    context.fill_preserve()
+    context.set_source_rgb(0.42, 0.65, 0.85)
+    context.stroke()
+
+    inner = radius * 0.52
+    start = math.radians(-135)
+    end = math.radians(145)
+    context.arc(shx, shy, inner, start, end)
+    context.stroke()
+    arrow_x = shx + (math.cos(end) * inner)
+    arrow_y = shy + (math.sin(end) * inner)
+    context.move_to(arrow_x, arrow_y)
+    context.line_to(arrow_x + (radius * 0.30), arrow_y - (radius * 0.02))
+    context.move_to(arrow_x, arrow_y)
+    context.line_to(arrow_x + (radius * 0.03), arrow_y + (radius * 0.30))
+    context.stroke()
+    context.restore()
+
+
+def _draw_selection_rotation_overlay(image, context):
+    if not _selection_rotation_available(image):
+        return
+
+    if getattr(image, "_paint_rotation_mode", False):
+        pixbuf = getattr(image, "_paint_rotation_preview_pixbuf", None)
+        if pixbuf is None:
+            return
+        x = image._paint_rotation_preview_x
+        y = image._paint_rotation_preview_y
+        Gdk.cairo_set_source_pixbuf(context, pixbuf, x - image.scroll_x, y - image.scroll_y)
+        if image.is_zoomed_surface_sharp():
+            context.get_source().set_filter(cairo.FILTER_NEAREST)
+        context.paint()
+        path = _transformed_selection_path(
+            image,
+            image._paint_rotation_angle,
+            False,
+            False,
+            True,
+        )
+        _draw_path_overlay(context, path, max(1.0 / image.zoom_level, 0.5))
+        handle_path = _transformed_selection_path(
+            image,
+            image._paint_rotation_angle,
+            False,
+            False,
+            False,
+        )
+        _draw_rotation_handle_chrome(image, context, handle_path)
+        return
+
+    _draw_rotation_handle_chrome(image, context, image.selection.selection_path)
+
+
+def _draw_resize_overlay(image, context):
+    if not hasattr(image, "main_pixbuf") or image.main_pixbuf is None:
+        return
+
+    is_resizing = getattr(image, "_paint_resize_mode", None) is not None
+    if is_resizing:
+        width = getattr(image, "_paint_resize_preview_w", image.get_pixbuf_width())
+        height = getattr(image, "_paint_resize_preview_h", image.get_pixbuf_height())
+    else:
+        width = image.get_pixbuf_width()
+        height = image.get_pixbuf_height()
+
+    x = -image.scroll_x
+    y = -image.scroll_y
+    line_width = max(1.0 / image.zoom_level, 0.5)
+
+    context.save()
+    if is_resizing:
+        context.set_dash([3 * line_width, 3 * line_width])
+        context.set_line_width(line_width)
+        context.set_source_rgba(0.42, 0.65, 0.85, 0.9)
+        context.rectangle(x, y, width, height)
+        context.stroke()
+        context.set_dash([])
+
+    for center_x, center_y in _handle_centers(image, width, height).values():
+        _draw_handle(context, image, center_x, center_y)
+    context.restore()
+
+
+def _force_two_column_tools_panel(window):
+    nb_tools = max(1, len(window.tools))
+    rows_per_column = max(1, (nb_tools + TOOLS_COLUMNS - 1) // TOOLS_COLUMNS)
+
+    window.tools_flowbox.set_min_children_per_line(rows_per_column)
+    window.tools_flowbox.set_max_children_per_line(rows_per_column)
+    window.tools_flowbox.set_homogeneous(True)
+    window.tools_flowbox.set_valign(Gtk.Align.START)
+    window.tools_flowbox.set_size_request(TOOLS_PANEL_WIDTH, -1)
+    window.tools_nonscrollable_box.set_size_request(TOOLS_PANEL_WIDTH, -1)
+    window.tools_scrollable_box.set_size_request(TOOLS_PANEL_WIDTH, -1)
+
+
+def _menu_item(label, action=None, target=None, icon=None, hidden_when=None):
+    item = Gio.MenuItem.new(label, None)
+    if action is not None:
+        if target is None:
+            item.set_action_and_target_value(action, None)
+        else:
+            item.set_action_and_target_value(action, GLib.Variant.new_string(target))
+    if icon is not None:
+        item.set_attribute_value("verb-icon", GLib.Variant.new_string(icon))
+    if hidden_when is not None:
+        item.set_attribute_value("hidden-when", GLib.Variant.new_string(hidden_when))
+    return item
+
+
+def _append_section(menu, items, display_hint=None):
+    section = Gio.Menu()
+    for item in items:
+        section.append_item(item)
+    if display_hint is None:
+        menu.append_section(None, section)
+        return
+
+    section_item = Gio.MenuItem.new_section(None, section)
+    section_item.set_attribute_value("display-hint", GLib.Variant.new_string(display_hint))
+    menu.append_item(section_item)
+
+
+def _selection_rotation_menu_model():
+    menu = Gio.Menu()
+    for angle in ROTATE_MENU_ANGLES:
+        label = str(angle) + "°"
+        menu.append_item(_menu_item(label, "win.selection-rotate-" + str(angle)))
+    _append_section(menu, [_menu_item("Specified degree (°)…", "win.selection-rotate-custom")])
+    return menu
+
+
+def _active_selection_menu_model():
+    menu = Gio.Menu()
+    _append_section(menu, [_menu_item(_("Deselect"), "win.unselect")])
+    _append_section(
+        menu,
+        [
+            _menu_item(_("Cut"), "win.selection_cut", icon="edit-cut-symbolic"),
+            _menu_item(_("Copy"), "win.selection_copy", icon="edit-copy-symbolic"),
+            _menu_item(_("Delete"), "win.selection_delete", icon="edit-delete-symbolic"),
+        ],
+    )
+    _append_section(
+        menu,
+        [
+            _menu_item(_("Crop"), "win.active_tool", "crop", "tool-crop-symbolic"),
+            _menu_item(_("Scale"), "win.active_tool", "scale", "tool-scale-symbolic"),
+            _menu_item(_("Rotate"), "win.active_tool", "rotate", "tool-rotate-symbolic"),
+            _menu_item(_("Skew"), "win.skew-exists", icon="tool-skew-symbolic", hidden_when="action-missing"),
+            _menu_item(_("Filters"), "win.active_tool", "filters", "tool-filters-symbolic"),
+        ],
+        "horizontal-buttons",
+    )
+
+    rotate_item = Gio.MenuItem.new_submenu(_("Rotate selection"), _selection_rotation_menu_model())
+    _append_section(menu, [rotate_item])
+
+    more_menu = Gio.Menu()
+    _append_section(
+        more_menu,
+        [_menu_item(_("Invert selection"), "win.selection_invert", hidden_when="action-missing")],
+    )
+    _append_section(
+        more_menu,
+        [
+            _menu_item(_("Define as current image"), "win.selection-replace-canvas", hidden_when="action-missing"),
+            _menu_item(_("Expand image to fit"), "win.selection-expand-canvas", hidden_when="action-missing"),
+        ],
+    )
+    _append_section(
+        more_menu,
+        [
+            _menu_item(_("Open As New Image"), "win.new_tab_selection"),
+            _menu_item(_("Export as…"), "win.selection_export"),
+        ],
+    )
+    _append_section(menu, [Gio.MenuItem.new_submenu(_("More actions"), more_menu)])
+    return menu
+
+
+_original_draw = drawing_image.DrImage.on_draw
+_original_press = drawing_image.DrImage.on_press_on_area
+_original_motion = drawing_image.DrImage.on_motion_on_area
+_original_release = drawing_image.DrImage.on_release_on_area
+_original_leave = drawing_image.DrImage.on_leave_image
+_original_selection_draw_above = drawing_abstract_select.AbstractSelectionTool.on_draw_above
+_original_rotate_draw_above = drawing_tool_rotate.ToolRotate.on_draw_above
+_original_rotate_build_operation = drawing_tool_rotate.ToolRotate.build_operation
+_original_rotate_do_tool_operation = drawing_tool_rotate.ToolRotate.do_tool_operation
+_original_rotate_left_clicked = drawing_tool_rotate.ToolRotate.on_left_clicked
+_original_rotate_right_clicked = drawing_tool_rotate.ToolRotate.on_right_clicked
+_original_rotate_horizontal_clicked = drawing_tool_rotate.ToolRotate.on_horizontal_clicked
+_original_rotate_vertical_clicked = drawing_tool_rotate.ToolRotate.on_vertical_clicked
+_original_rotate_release = drawing_tool_rotate.ToolRotate.on_release_on_area
+_original_selection_manager_init = drawing_selection_manager.DrSelectionManager.__init__
+_original_add_all_win_actions = drawing_window.DrWindow.add_all_win_actions
+_original_set_tools_labels_visibility = drawing_window.DrWindow.set_tools_labels_visibility
+
+
+def _paint_selection_manager_init(self, image):
+    _original_selection_manager_init(self, image)
+    old_menu = self.menu_if_active
+    self.menu_if_active = Gtk.Popover.new_from_model(self.image, _active_selection_menu_model())
+    self.set_popovers_position(1.0, 1.0)
+    old_menu.destroy()
+
+
+def _get_selection_rotate_tool(window):
+    rotate_tool = window.tools.get("rotate")
+    if rotate_tool is None:
+        window.reveal_action_report(_("Required tool is not available"))
+        return None
+    return rotate_tool
+
+
+def _rotate_selection_from_menu(window, angle):
+    rotate_tool = _get_selection_rotate_tool(window)
+    if rotate_tool is None:
+        return
+    window.get_active_image().selection.hide_popovers()
+    _apply_paint_selection_rotation(rotate_tool, angle)
+
+
+def _show_custom_selection_rotation_dialog(window):
+    rotate_tool = _get_selection_rotate_tool(window)
+    if rotate_tool is None:
+        return
+
+    wants_csd = "h" in window.deco_layout
+    dialog = Gtk.Dialog(
+        use_header_bar=wants_csd,
+        destroy_with_parent=True,
+        transient_for=window,
+        modal=True,
+        title=_("Rotate selection"),
+    )
+    dialog.add_button(_("Cancel"), Gtk.ResponseType.CANCEL)
+    rotate_button = dialog.add_button(_("Rotate"), Gtk.ResponseType.OK)
+    rotate_button.get_style_context().add_class("suggested-action")
+    dialog.set_default_response(Gtk.ResponseType.OK)
+
+    row = Gtk.Box(
+        orientation=Gtk.Orientation.HORIZONTAL,
+        spacing=12,
+        margin_start=18,
+        margin_end=18,
+        margin_top=18,
+        margin_bottom=18,
+    )
+    label = Gtk.Label(label=_("Angle (°)"))
+    spin = Gtk.SpinButton.new_with_range(-360, 360, 1)
+    spin.set_numeric(True)
+    spin.set_value(45)
+    spin.set_activates_default(True)
+    row.add(label)
+    row.add(spin)
+    dialog.get_content_area().add(row)
+    dialog.show_all()
+
+    if dialog.run() == Gtk.ResponseType.OK:
+        window.get_active_image().selection.hide_popovers()
+        _apply_paint_selection_rotation(rotate_tool, spin.get_value_as_int())
+    dialog.destroy()
+
+
+def _add_selection_rotation_actions(window):
+    if window.lookup_action("selection-rotate-custom") is not None:
+        return
+
+    for angle in ROTATE_MENU_ANGLES:
+        action_name = "selection-rotate-" + str(angle)
+
+        def activate_fixed(_action, _parameter, fixed_angle=angle):
+            _rotate_selection_from_menu(window, fixed_angle)
+
+        window.add_action_simple(action_name, activate_fixed)
+
+    def activate_custom(*_args):
+        _show_custom_selection_rotation_dialog(window)
+
+    window.add_action_simple("selection-rotate-custom", activate_custom)
+
+
+def _paint_add_all_win_actions(self):
+    _original_add_all_win_actions(self)
+    _add_selection_rotation_actions(self)
+
+
+def _paint_rotate_build_operation(self):
+    operation = _original_rotate_build_operation(self)
+    if operation["is_selection"]:
+        pixbuf = self.get_selection_pixbuf()
+        dx, dy = _rotation_deltas(
+            pixbuf.get_width(),
+            pixbuf.get_height(),
+            operation["angle"],
+        )
+        operation["local_dx"] = dx
+        operation["local_dy"] = dy
+        operation["fill_rgba"] = ROTATE_FILL_RGBA
+        self._paint_rotation_preview_dx = dx
+        self._paint_rotation_preview_dy = dy
+    return operation
+
+
+def _paint_rotate_do_tool_operation(self, operation):
+    if "fill_rgba" not in operation:
+        return _original_rotate_do_tool_operation(self, operation)
+
+    self.start_tool_operation(operation)
+    selection_path = None
+    if operation["is_selection"]:
+        selection_path = _transformed_selection_path(
+            self.get_image(),
+            operation["angle"],
+            operation["flip_h"],
+            operation["flip_v"],
+            False,
+        )
+    source_pixbuf = self.get_selection_pixbuf() if operation["is_selection"] else self.get_main_pixbuf()
+    new_pixbuf = source_pixbuf
+
+    if operation["flip_h"]:
+        new_pixbuf = new_pixbuf.flip(True)
+    if operation["flip_v"]:
+        new_pixbuf = new_pixbuf.flip(False)
+
+    new_pixbuf = _rotate_pixbuf(
+        self.get_image(),
+        new_pixbuf,
+        operation["angle"],
+        operation["fill_rgba"],
+    )
+    if operation["is_selection"]:
+        selection = self.get_selection()
+        origin_x = selection.selection_x + operation["local_dx"]
+        origin_y = selection.selection_y + operation["local_dy"]
+        new_pixbuf = _mask_pixbuf_to_path(
+            self.get_image(),
+            new_pixbuf,
+            selection_path,
+            origin_x,
+            origin_y,
+        )
+    self.get_image().set_temp_pixbuf(new_pixbuf)
+    self.common_end_operation(operation)
+    if operation["is_selection"] and not operation["is_preview"] and selection_path is not None:
+        selection = self.get_selection()
+        selection.selection_path = selection_path
+        selection.set_coords(True, selection.selection_x, selection.selection_y)
+
+
+def _paint_rotate_draw_above(self, area, cairo_context):
+    if not self.apply_to_selection or not self.selection_is_active():
+        return _original_rotate_draw_above(self, area, cairo_context)
+
+    image = self.get_image()
+    pixbuf = image.temp_pixbuf
+    dx = getattr(self, "_paint_rotation_preview_dx", 0)
+    dy = getattr(self, "_paint_rotation_preview_dy", 0)
+    x = self.get_selection().selection_x + dx - image.scroll_x
+    y = self.get_selection().selection_y + dy - image.scroll_y
+
+    Gdk.cairo_set_source_pixbuf(cairo_context, pixbuf, x, y)
+    if image.is_zoomed_surface_sharp():
+        cairo_context.get_source().set_filter(cairo.FILTER_NEAREST)
+    cairo_context.paint()
+
+    path = _transformed_selection_path(
+        image,
+        self.get_angle(),
+        self.flip_h,
+        self.flip_v,
+        True,
+    )
+    _draw_path_overlay(cairo_context, path, self.get_overlay_thickness())
+
+
+def _apply_paint_selection_rotation(rotate_tool, angle=0, flip_h=False, flip_v=False):
+    if not rotate_tool.selection_is_active():
+        return False
+    if angle % 360 == 0 and not flip_h and not flip_v:
+        if rotate_tool.window.active_tool_id == "rotate":
+            rotate_tool.window.force_selection()
+        return True
+    pixbuf = rotate_tool.get_selection_pixbuf()
+    dx, dy = _rotation_deltas(pixbuf.get_width(), pixbuf.get_height(), angle)
+
+    operation = {
+        "tool_id": "rotate",
+        "is_selection": True,
+        "is_preview": False,
+        "local_dx": dx,
+        "local_dy": dy,
+        "angle": angle,
+        "flip_h": flip_h,
+        "flip_v": flip_v,
+        "fill_rgba": ROTATE_FILL_RGBA,
+    }
+    rotate_tool.apply_to_selection = True
+    rotate_tool.apply_operation(operation)
+    rotate_tool.get_image().fake_scrollbar_update()
+    rotate_tool.window.update_picture_title()
+    rotate_tool.window.force_selection()
+    rotate_tool.window.set_window_subtitles()
+    return True
+
+
+def _paint_rotate_left_clicked(self, *args):
+    if _apply_paint_selection_rotation(self, 90):
+        return
+    return _original_rotate_left_clicked(self, *args)
+
+
+def _paint_rotate_right_clicked(self, *args):
+    if _apply_paint_selection_rotation(self, -90):
+        return
+    return _original_rotate_right_clicked(self, *args)
+
+
+def _paint_rotate_horizontal_clicked(self, *args):
+    if _apply_paint_selection_rotation(self, 0, True, False):
+        return
+    return _original_rotate_horizontal_clicked(self, *args)
+
+
+def _paint_rotate_vertical_clicked(self, *args):
+    if _apply_paint_selection_rotation(self, 0, False, True):
+        return
+    return _original_rotate_vertical_clicked(self, *args)
+
+
+def _paint_rotate_release(self, event, surface, event_x, event_y):
+    _original_rotate_release(self, event, surface, event_x, event_y)
+    if self.apply_to_selection and self.selection_is_active():
+        _apply_paint_selection_rotation(self, self.get_angle(), self.flip_h, self.flip_v)
+
+
+def _paint_draw(self, area, cairo_context):
+    _original_draw(self, area, cairo_context)
+    _draw_selection_rotation_overlay(self, cairo_context)
+    _draw_resize_overlay(self, cairo_context)
+
+
+def _paint_press(self, area, event):
+    if event.button == Gdk.BUTTON_PRIMARY and _rotate_handle_at_event(self, event):
+        _begin_selection_rotation(self, event)
+        return True
+
+    mode = _handle_at_event(self, event)
+    if event.button == Gdk.BUTTON_PRIMARY and mode is not None:
+        event_x, event_y = self.get_event_coords(event, as_integers=False)
+        self._paint_resize_mode = mode
+        self._paint_resize_press_x = event_x
+        self._paint_resize_press_y = event_y
+        self._paint_resize_origin_w = self.get_pixbuf_width()
+        self._paint_resize_origin_h = self.get_pixbuf_height()
+        self._paint_resize_preview_w = self._paint_resize_origin_w
+        self._paint_resize_preview_h = self._paint_resize_origin_h
+        self._is_pressed = True
+        _set_canvas_cursor(self, _cursor_for_mode(mode))
+        return True
+    return _original_press(self, area, event)
+
+
+def _paint_motion(self, area, event):
+    if getattr(self, "_paint_rotation_mode", False):
+        angle = _rotation_angle_from_event(self, event)
+        _set_rotation_preview(self, angle)
+        _set_canvas_cursor(self, "grabbing")
+        self.update()
+        return True
+
+    mode = getattr(self, "_paint_resize_mode", None)
+    if mode is not None:
+        width, height = _preview_size(self, event)
+        self._paint_resize_preview_w = width
+        self._paint_resize_preview_h = height
+        _set_canvas_cursor(self, _cursor_for_mode(mode))
+        self.update()
+        return True
+
+    if _rotate_handle_at_event(self, event):
+        self._paint_rotation_hover = True
+        self._paint_resize_hover = False
+        _set_canvas_cursor(self, "alias")
+        self._drawing_area.set_tooltip_text(_("Drag to rotate the selection"))
+        return True
+
+    if getattr(self, "_paint_rotation_hover", False):
+        self._paint_rotation_hover = False
+        self._drawing_area.set_tooltip_text(None)
+        self.window.set_cursor(True)
+
+    mode = _handle_at_event(self, event)
+    if mode is not None:
+        self._paint_resize_hover = True
+        _set_canvas_cursor(self, _cursor_for_mode(mode))
+        self._drawing_area.set_tooltip_text(_("Drag to resize the canvas"))
+        return True
+
+    if getattr(self, "_paint_resize_hover", False):
+        self._paint_resize_hover = False
+        self._drawing_area.set_tooltip_text(None)
+        self.window.set_cursor(True)
+
+    return _original_motion(self, area, event)
+
+
+def _paint_release(self, area, event):
+    if getattr(self, "_paint_rotation_mode", False):
+        _set_rotation_preview(self, _rotation_angle_from_event(self, event))
+        _finish_selection_rotation(self)
+        return True
+
+    mode = getattr(self, "_paint_resize_mode", None)
+    if mode is not None:
+        width = getattr(self, "_paint_resize_preview_w", self.get_pixbuf_width())
+        height = getattr(self, "_paint_resize_preview_h", self.get_pixbuf_height())
+        self._paint_resize_mode = None
+        self._paint_resize_preview_w = self.get_pixbuf_width()
+        self._paint_resize_preview_h = self.get_pixbuf_height()
+        self._is_pressed = False
+        _apply_canvas_resize(self, width, height)
+        self.window.set_cursor(False)
+        return True
+    return _original_release(self, area, event)
+
+
+def _paint_leave(self, *args):
+    self._paint_rotation_hover = False
+    self._paint_resize_hover = False
+    self._drawing_area.set_tooltip_text(None)
+    return _original_leave(self, *args)
+
+
+def _paint_selection_draw_above(self, area, cairo_context):
+    if getattr(self.get_image(), "_paint_rotation_mode", False):
+        return
+    return _original_selection_draw_above(self, area, cairo_context)
+
+
+def _paint_set_tools_labels_visibility(self, visible):
+    _original_set_tools_labels_visibility(self, visible)
+    if visible:
+        self.tools_flowbox.set_homogeneous(False)
+        self.tools_flowbox.set_valign(Gtk.Align.FILL)
+        self.tools_flowbox.set_size_request(-1, -1)
+        self.tools_nonscrollable_box.set_size_request(-1, -1)
+        self.tools_scrollable_box.set_size_request(-1, -1)
+        return
+    _force_two_column_tools_panel(self)
+
+
+drawing_image.DrImage.on_draw = _paint_draw
+drawing_image.DrImage.on_press_on_area = _paint_press
+drawing_image.DrImage.on_motion_on_area = _paint_motion
+drawing_image.DrImage.on_release_on_area = _paint_release
+drawing_image.DrImage.on_leave_image = _paint_leave
+drawing_abstract_select.AbstractSelectionTool.on_draw_above = _paint_selection_draw_above
+drawing_tool_rotate.ToolRotate.on_draw_above = _paint_rotate_draw_above
+drawing_tool_rotate.ToolRotate.build_operation = _paint_rotate_build_operation
+drawing_tool_rotate.ToolRotate.do_tool_operation = _paint_rotate_do_tool_operation
+drawing_tool_rotate.ToolRotate.on_left_clicked = _paint_rotate_left_clicked
+drawing_tool_rotate.ToolRotate.on_right_clicked = _paint_rotate_right_clicked
+drawing_tool_rotate.ToolRotate.on_horizontal_clicked = _paint_rotate_horizontal_clicked
+drawing_tool_rotate.ToolRotate.on_vertical_clicked = _paint_rotate_vertical_clicked
+drawing_tool_rotate.ToolRotate.on_release_on_area = _paint_rotate_release
+drawing_selection_manager.DrSelectionManager.__init__ = _paint_selection_manager_init
+drawing_window.DrWindow.add_all_win_actions = _paint_add_all_win_actions
+drawing_window.DrWindow.set_tools_labels_visibility = _paint_set_tools_labels_visibility
+
+from drawing import main
+
+sys.exit(main.main(VERSION))

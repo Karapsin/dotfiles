@@ -92,9 +92,7 @@ class CalendarPopup(Gtk.Window):
         self.month_label.set_text(calendar.month_name[self.month])
         self.year_label.set_text(str(self.year))
 
-        self.grid.attach(Gtk.Label(label=""), 0, 0, 1, 1)
-
-        for column, day_name in enumerate(DAYS, start=1):
+        for column, day_name in enumerate(DAYS):
             label = Gtk.Label(label=day_name)
             add_class(label, "polybar-calendar-weekday")
             self.grid.attach(label, column, 0, 1, 1)
@@ -109,11 +107,7 @@ class CalendarPopup(Gtk.Window):
         weeks = weeks[:6]
 
         for row, week in enumerate(weeks, start=1):
-            side = Gtk.Label(label=DAYS[(row - 1) % len(DAYS)])
-            add_class(side, "polybar-calendar-side-label")
-            self.grid.attach(side, 0, row, 1, 1)
-
-            for column, day in enumerate(week, start=1):
+            for column, day in enumerate(week):
                 self.grid.attach(self.day_cell(day), column, row, 1, 1)
 
         self.grid.show_all()

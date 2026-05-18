@@ -45,17 +45,19 @@ bindsym $mod+d fullscreen disable; exec --no-startup-id rofi -show drun
 # bindsym $mod+d exec --no-startup-id dmenu_run
 
 bindsym $mod+Shift+e exec --no-startup-id nemo --no-desktop
+bindsym $mod+n exec --no-startup-id mousepad
 bindsym $mod+Shift+s exec --no-startup-id flameshot gui
-bindsym $mod+Shift+l exec --no-startup-id betterlockscreen -l
+bindsym Ctrl+Shift+l exec --no-startup-id betterlockscreen -l dim
 bindsym $mod+Shift+p exec --no-startup-id $HOME/.config/polybar/powermenu.sh
-bindsym $mod+c exec --no-startup-id google-chrome-stable
+bindsym $mod+c exec --no-startup-id $HOME/.local/bin/google-chrome-dotfiles
 bindsym $mod+g exec --no-startup-id steam
-bindsym $mod+t exec --no-startup-id Telegram
+bindsym $mod+t exec --no-startup-id /usr/bin/env QT_QPA_PLATFORMTHEME=xdgdesktopportal /usr/bin/Telegram
 bindsym $mod+Shift+v exec --no-startup-id $i3dir/vpn-control-toggle.sh
 bindsym $mod+Mod1+v exec --no-startup-id pavucontrol --tab=1
 bindsym $mod+Mod1+b exec --no-startup-id $i3dir/blueman-launch.sh --manager
 bindsym $mod+Shift+t exec --no-startup-id element-desktop
 bindsym $mod+p exec --no-startup-id positron
+bindsym $mod+Shift+d exec --no-startup-id $HOME/.local/bin/drawing
 bindsym $mod+Mod1+r exec --no-startup-id rstudio
 
 # Focus
@@ -71,6 +73,7 @@ bindsym $mod+Right exec --no-startup-id $i3dir/focus-visual.py right
 # Move windows
 bindsym $mod+Shift+j move left
 bindsym $mod+Shift+k move down
+bindsym $mod+Shift+l move up
 bindsym $mod+Shift+semicolon move right
 bindsym $mod+Shift+Left move left
 bindsym $mod+Shift+Down move down
@@ -137,7 +140,7 @@ for_window [instance="^RAIL$"] move to output $rail_output, floating enable, sti
 for_window [class="^RAIL(:.*)?$"] move to output $rail_output, floating enable, sticky disable, focus, move position center
 
 # Window colors
-client.focused          #28445a #17212b #d7dde4 #173348 #28445a
+client.focused          #3a607d #243341 #d7dde4 #28506d #3a607d
 client.focused_inactive #17212b #151b24 #8a949e #17212b #17212b
 client.unfocused        #17212b #151b24 #8a949e #17212b #17212b
 client.urgent           #d26a6a #d26a6a #0c1116 #ef8f8f #d26a6a

@@ -1,4 +1,5 @@
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,6 +51,54 @@ static Window find_named_window(Display *display, Window root, const char *targe
   return found;
 }
 
+static int window_has_class(Display *display, Window window, const char *target_class) {
+  XClassHint hint;
+  int matches = 0;
+
+  if (XGetClassHint(display, window, &hint) == 0) {
+    return 0;
+  }
+
+  matches =
+    (hint.res_name != NULL && strcmp(hint.res_name, target_class) == 0) ||
+    (hint.res_class != NULL && strcmp(hint.res_class, target_class) == 0);
+
+  if (hint.res_name != NULL) {
+    XFree(hint.res_name);
+  }
+  if (hint.res_class != NULL) {
+    XFree(hint.res_class);
+  }
+
+  return matches;
+}
+
+static Window find_class_window(Display *display, Window root, const char *target_class) {
+  Window root_return = 0;
+  Window parent_return = 0;
+  Window *children = NULL;
+  unsigned int child_count = 0;
+  Window found = 0;
+
+  if (window_has_class(display, root, target_class)) {
+    return root;
+  }
+
+  if (!XQueryTree(display, root, &root_return, &parent_return, &children, &child_count)) {
+    return 0;
+  }
+
+  for (unsigned int i = 0; i < child_count && found == 0; i++) {
+    found = find_class_window(display, children[i], target_class);
+  }
+
+  if (children != NULL) {
+    XFree(children);
+  }
+
+  return found;
+}
+
 static void grab_left_click(Display *display, Window window) {
   const unsigned int masks[] = {
     0,
@@ -75,6 +124,19 @@ static void grab_left_click(Display *display, Window window) {
 
   XSelectInput(display, window, StructureNotifyMask | ButtonPressMask | ButtonReleaseMask);
   XSync(display, False);
+}
+
+static int pavucontrol_is_open(Display *display, Window root) {
+  return find_class_window(display, root, "pavucontrol") != 0;
+}
+
+static void close_pavucontrol(void) {
+  pid_t pid = fork();
+  if (pid == 0) {
+    setsid();
+    execlp("i3-msg", "i3-msg", "-q", "[class=\"^pavucontrol$\"] kill", (char *)NULL);
+    _exit(127);
+  }
 }
 
 static void open_pavucontrol(void) {
@@ -103,6 +165,8 @@ int main(void) {
   Window root;
   Window tray_window = 0;
   int x11_fd;
+  int pavucontrol_open_on_press = 0;
+  int left_press_seen = 0;
 
   if (display == NULL) {
     return 1;
@@ -128,10 +192,26 @@ int main(void) {
 
       if (event.type == DestroyNotify && event.xdestroywindow.window == tray_window) {
         tray_window = 0;
+      } else if (event.type == ButtonPress &&
+                 event.xbutton.window == tray_window &&
+                 event.xbutton.button == Button1) {
+        pavucontrol_open_on_press = pavucontrol_is_open(display, root);
+        left_press_seen = 1;
       } else if (event.type == ButtonRelease &&
                  event.xbutton.window == tray_window &&
                  event.xbutton.button == Button1) {
-        open_pavucontrol();
+        if (!left_press_seen) {
+          pavucontrol_open_on_press = pavucontrol_is_open(display, root);
+        }
+
+        if (pavucontrol_open_on_press) {
+          close_pavucontrol();
+        } else {
+          open_pavucontrol();
+        }
+
+        left_press_seen = 0;
+        pavucontrol_open_on_press = 0;
       }
     }
 

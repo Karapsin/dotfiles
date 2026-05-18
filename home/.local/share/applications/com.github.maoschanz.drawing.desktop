@@ -1,0 +1,24 @@
+[Desktop Entry]
+Name=Drawing
+Comment=Simple drawing utility
+Exec=drawing %U
+Icon=com.github.maoschanz.drawing
+Terminal=false
+Type=Application
+StartupNotify=true
+Categories=Graphics;GNOME;GTK;
+MimeType=image/png;image/bmp;image/jpeg;
+Keywords=Paint;Sketch;Pencil;
+Actions=new-window;new-tab;edit-clipboard;
+
+[Desktop Action new-window]
+Name=New Window
+Exec=drawing --new-window
+
+[Desktop Action new-tab]
+Name=New Image
+Exec=drawing --new-tab
+
+[Desktop Action edit-clipboard]
+Name=Edit Image in Clipboard
+Exec=drawing --edit-clipboard

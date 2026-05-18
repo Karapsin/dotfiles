@@ -2,7 +2,7 @@
 Name=Telegram
 Comment=New era of messaging
 TryExec=Telegram
-Exec=env QT_QPA_PLATFORMTHEME=xdgdesktopportal Telegram -- %U
+Exec=/usr/bin/env QT_QPA_PLATFORMTHEME=xdgdesktopportal /usr/bin/Telegram -- %U
 Icon=org.telegram.desktop
 Terminal=false
 StartupWMClass=TelegramDesktop

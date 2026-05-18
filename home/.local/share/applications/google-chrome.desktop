@@ -4,7 +4,7 @@ Name=Google Chrome
 GenericName=Web Browser
 Comment=Access the Internet
 StartupWMClass=Google-chrome
-Exec=env GTK_USE_PORTAL=1 /usr/bin/google-chrome-stable %U
+Exec=sh -c "exec \"\\$HOME/.local/bin/google-chrome-dotfiles\" \"\\$@\"" google-chrome-dotfiles %U
 StartupNotify=true
 Terminal=false
 Icon=google-chrome
@@ -15,8 +15,8 @@ Actions=new-window;new-private-window;
 
 [Desktop Action new-window]
 Name=New Window
-Exec=env GTK_USE_PORTAL=1 /usr/bin/google-chrome-stable
+Exec=sh -c "exec \"\\$HOME/.local/bin/google-chrome-dotfiles\" \"\\$@\"" google-chrome-dotfiles
 
 [Desktop Action new-private-window]
 Name=New Incognito Window
-Exec=env GTK_USE_PORTAL=1 /usr/bin/google-chrome-stable --incognito
+Exec=sh -c "exec \"\\$HOME/.local/bin/google-chrome-dotfiles\" --incognito \"\\$@\"" google-chrome-dotfiles

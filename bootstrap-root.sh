@@ -55,26 +55,31 @@ if [[ $NO_CONFIRM -eq 1 ]]; then
   PACMAN_INSTALL_ARGS+=(--noconfirm)
 fi
 
-echo "[1/5] Installing official packages..."
+echo "[1/6] Installing official packages..."
 pacman "${PACMAN_ARGS[@]}" "${PACMAN_PACKAGES[@]}"
 
-echo "[2/5] Setting the X11 keyboard baseline..."
+echo "[2/6] Setting the X11 keyboard baseline..."
 localectl --no-convert set-x11-keymap us,ru pc105+inet "" "grp:win_space_toggle,terminate:ctrl_alt_bksp"
 
 BOOTSTRAP_USER="${SUDO_USER:-${BOOTSTRAP_USER:-}}"
 if [[ -n "$BOOTSTRAP_USER" ]]; then
-  echo "[3/5] Enabling lingering for $BOOTSTRAP_USER..."
+  echo "[3/6] Enabling lingering for $BOOTSTRAP_USER..."
   loginctl enable-linger "$BOOTSTRAP_USER" || true
 else
-  echo "[3/5] Skipping linger enable: no non-root target user detected."
+  echo "[3/6] Skipping linger enable: no non-root target user detected."
 fi
 
 if [[ $ENABLE_NETWORKMANAGER -eq 1 ]]; then
-  echo "[4/5] Enabling NetworkManager..."
+  echo "[4/6] Enabling NetworkManager..."
   systemctl enable --now NetworkManager.service
 else
-  echo "[4/5] Leaving NetworkManager disabled (pass --enable-networkmanager to enable it)."
+  echo "[4/6] Leaving NetworkManager disabled (pass --enable-networkmanager to enable it)."
 fi
+
+echo "[5/6] Installing Chrome dark-blue theme policy..."
+install -Dm644 \
+  "$DOTFILES_DIR/root/etc/opt/chrome/policies/managed/dotfiles-dark-blue-theme.json" \
+  /etc/opt/chrome/policies/managed/dotfiles-dark-blue-theme.json
 
 if [[ $WITH_LIGHTDM -eq 1 ]]; then
   if [[ ${#LIGHTDM_PACKAGES[@]} -eq 0 ]]; then
@@ -82,7 +87,7 @@ if [[ $WITH_LIGHTDM -eq 1 ]]; then
     exit 1
   fi
 
-  echo "[5/5] Installing LightDM packages, greeter theme, and wallpaper sync units..."
+  echo "[6/6] Installing LightDM packages, greeter theme, and wallpaper sync units..."
   pacman "${PACMAN_INSTALL_ARGS[@]}" "${LIGHTDM_PACKAGES[@]}"
 
   install -d /usr/share/backgrounds
@@ -115,7 +120,7 @@ if [[ $WITH_LIGHTDM -eq 1 ]]; then
     echo "Skipping wallpaper-login-copy timer enable: no non-root target user detected."
   fi
 else
-  echo "[5/5] Skipping LightDM wallpaper integration (pass --with-lightdm to enable it)."
+  echo "[6/6] Skipping LightDM wallpaper integration (pass --with-lightdm to enable it)."
 fi
 
 echo

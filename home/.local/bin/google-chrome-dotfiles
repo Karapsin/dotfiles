@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+chrome_bin="/usr/bin/google-chrome-stable"
+
+exec env GTK_USE_PORTAL=1 "$chrome_bin" "$@"

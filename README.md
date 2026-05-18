@@ -60,6 +60,7 @@ The direct scripts remain valid entrypoints for compatibility.
 - sets the X11 keyboard baseline to `us,ru` with `Win+Space`
 - enables linger for the target user when possible
 - optionally enables `NetworkManager`
+- installs the Chrome dark-blue theme policy
 - optionally installs LightDM packages from [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt), the dark blue GTK greeter theme, and the wallpaper sync units
 
 `bootstrap-user.sh`:
@@ -70,6 +71,7 @@ The direct scripts remain valid entrypoints for compatibility.
 - installs AUR packages from [`packages/aur.txt`](packages/aur.txt)
 - verifies executable bits for scripts used by the desktop config
 - enables the wallpaper timer
+- deploys the Chrome launcher and checks for the dark-blue theme policy
 - applies the custom XKB map immediately
 
 `bootstrap-user-light.sh`:
@@ -78,6 +80,7 @@ The direct scripts remain valid entrypoints for compatibility.
 - stows packages from [`packages/stow.txt`](packages/stow.txt)
 - verifies executable bits for scripts used by the desktop config
 - enables the wallpaper timer when the user systemd manager is available
+- deploys the Chrome launcher and checks for the dark-blue theme policy
 - optionally enables linger and the LightDM wallpaper sync timer for the user
 - applies the custom XKB map immediately
 
@@ -107,3 +110,57 @@ Run the non-mutating validation script before committing bootstrap changes:
 ```bash
 ./scripts/check_dotfiles.sh
 ```
+
+## Custom i3 Shortcuts
+
+`$mod` is `Mod4`, usually the Super/Windows key. `$mod+Space` is reserved for
+keyboard layout switching through the custom XKB setup.
+
+### App Shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `$mod+Enter` / `$mod+Keypad Enter` | Launch terminal (like Windows Terminal or Command Prompt) |
+| `$mod+d` | Open Rofi application launcher (like Start menu search) |
+| `$mod+Shift+e` | Open Nemo file manager (like Windows File Explorer) |
+| `$mod+n` | Open Mousepad (like Windows Notepad) |
+| `$mod+Shift+s` | Start Flameshot screenshot selection (like Snipping Tool) |
+| `Ctrl+Shift+l` | Lock the screen with Betterlockscreen |
+| `$mod+c` | Launch Chrome through the dotfiles wrapper |
+| `$mod+g` | Launch Steam |
+| `$mod+t` | Launch Telegram |
+| `$mod+Shift+v` | Toggle VPN control |
+| `$mod+Alt+v` | Open PulseAudio volume control (like Volume Mixer) |
+| `$mod+Alt+b` | Open Blueman manager (like Bluetooth settings) |
+| `$mod+Shift+t` | Launch Element |
+| `$mod+p` | Launch Positron (like an RStudio or VS Code-style data IDE) |
+| `$mod+Shift+d` | Launch Drawing (like Windows Paint) |
+| `$mod+Alt+r` | Launch RStudio |
+
+### Polybar Shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `$mod+Shift+c` | Open the Polybar calendar popup |
+| `$mod+Shift+p` | Open the Polybar power menu |
+
+### i3 Action Shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `XF86AudioRaiseVolume` / `XF86AudioLowerVolume` | Raise or lower volume by 5% |
+| `XF86AudioMute` | Toggle audio mute |
+| `$mod+Shift+r` | Restart i3 |
+| `$mod+Shift+q` | Close the focused window |
+| `$mod+j/k/l/;` or `$mod+arrow keys` | Move focus left/down/up/right |
+| `$mod+Shift+j/k/l/;` or `$mod+Shift+arrow keys` | Move the focused window left/down/up/right |
+| `$mod+h` / `$mod+v` | Split next container vertically or horizontally |
+| `$mod+f` | Toggle fullscreen |
+| `$mod+s` / `$mod+w` / `$mod+e` | Use stacking, tabbed, or split layout |
+| `$mod+Shift+Space` | Toggle floating mode |
+| `$mod+a` | Focus parent container |
+| `$mod+1` through `$mod+0` | Switch to workspace 1 through 10 |
+| `$mod+Shift+1` through `$mod+Shift+0` | Move focused window to workspace 1 through 10 |
+| `$mod+r` | Enter resize mode |
+| resize mode: `j/k/l/;` or arrow keys | Resize the focused window |
+| resize mode: `Enter`, `Escape`, or `$mod+r` | Return to normal mode |

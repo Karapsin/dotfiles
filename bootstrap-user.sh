@@ -103,15 +103,15 @@ ensure_yay() {
 
 require_command stow
 
-echo "[1/7] Preparing stow targets..."
+echo "[1/8] Preparing stow targets..."
 BACKUP_DIR="$HOME/.dotfiles-bootstrap-backup/$(date +%Y%m%d-%H%M%S)"
 cleanup_legacy_wallpaper_links
 backup_or_reject_conflicts "$BACKUP_DIR"
 
-echo "[2/7] Pulling Git LFS assets (if available)..."
+echo "[2/8] Pulling Git LFS assets (if available)..."
 pull_lfs_assets
 
-echo "[3/7] Deploying stow packages..."
+echo "[3/8] Deploying stow packages..."
 stow --no-folding -d "$DOTFILES_DIR" -t "$HOME" -R "${STOW_PACKAGES[@]}"
 prepare_wallpaper_state
 
@@ -129,14 +129,17 @@ EXPECTED_EXECUTABLES=(
   "$HOME/.config/polybar/calendar.sh"
   "$HOME/.config/polybar/launch.sh"
   "$HOME/.local/bin/i3-terminal"
+  "$HOME/.local/bin/drawing"
+  "$HOME/.local/bin/google-chrome-dotfiles"
   "$HOME/.local/bin/load-xkb-shortcuts"
+  "$HOME/.wallpapers/bin/update_betterlockscreen_cache.sh"
   "$HOME/.wallpapers/bin/wallpaper_cycle.py"
 )
 
 verify_expected_executables "${EXPECTED_EXECUTABLES[@]}" || exit 1
 
 if [[ $SKIP_AUR -eq 0 && ${#AUR_PACKAGES[@]} -gt 0 ]]; then
-  echo "[4/7] Installing AUR packages..."
+  echo "[4/8] Installing AUR packages..."
   ensure_yay
   YAY_ARGS=(-S --needed)
   if [[ $NO_CONFIRM -eq 1 ]]; then
@@ -144,13 +147,16 @@ if [[ $SKIP_AUR -eq 0 && ${#AUR_PACKAGES[@]} -gt 0 ]]; then
   fi
   yay "${YAY_ARGS[@]}" "${AUR_PACKAGES[@]}"
 else
-  echo "[4/7] Skipping AUR packages."
+  echo "[4/8] Skipping AUR packages."
 fi
 
-echo "[5/7] Configuring file dialogs and folder handling..."
+echo "[5/8] Configuring file dialogs and folder handling..."
 configure_file_dialogs
 
-echo "[6/7] Enabling user services..."
+echo "[6/8] Configuring Chrome theme..."
+configure_chrome_theme
+
+echo "[7/8] Enabling user services..."
 if [[ $SKIP_SERVICES -eq 1 ]]; then
   echo "Skipping user systemd setup."
 elif systemctl --user show-environment >/dev/null 2>&1; then
@@ -160,7 +166,7 @@ else
   echo "Run later: systemctl --user daemon-reload && systemctl --user enable wallpaper-cycle.timer && systemctl --user start wallpaper-cycle.timer"
 fi
 
-echo "[7/7] Applying the custom XKB map..."
+echo "[8/8] Applying the custom XKB map..."
 if [[ $SKIP_XKB -eq 1 ]]; then
   echo "Skipping XKB apply."
 elif [[ -x "$HOME/.local/bin/load-xkb-shortcuts" ]]; then

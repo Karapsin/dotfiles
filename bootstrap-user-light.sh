@@ -86,14 +86,14 @@ if [[ $ENABLE_LINGER -eq 1 || $ENABLE_LOGIN_WALLPAPER -eq 1 ]]; then
   require_command sudo
 fi
 
-echo "[1/6] Preparing stow targets..."
+echo "[1/7] Preparing stow targets..."
 BACKUP_DIR="$HOME/.dotfiles-bootstrap-backup/$(date +%Y%m%d-%H%M%S)"
 backup_or_reject_conflicts "$BACKUP_DIR"
 
-echo "[2/6] Pulling Git LFS assets (if available)..."
+echo "[2/7] Pulling Git LFS assets (if available)..."
 pull_lfs_assets
 
-echo "[3/6] Deploying stow packages..."
+echo "[3/7] Deploying stow packages..."
 cleanup_legacy_wallpaper_links
 stow --no-folding -d "$DOTFILES_DIR" -t "$HOME" -R "${STOW_PACKAGES[@]}"
 prepare_wallpaper_state
@@ -112,16 +112,22 @@ EXPECTED_EXECUTABLES=(
   "$HOME/.config/polybar/calendar.sh"
   "$HOME/.config/polybar/launch.sh"
   "$HOME/.local/bin/i3-terminal"
+  "$HOME/.local/bin/drawing"
+  "$HOME/.local/bin/google-chrome-dotfiles"
   "$HOME/.local/bin/load-xkb-shortcuts"
+  "$HOME/.wallpapers/bin/update_betterlockscreen_cache.sh"
   "$HOME/.wallpapers/bin/wallpaper_cycle.py"
 )
 
 verify_expected_executables "${EXPECTED_EXECUTABLES[@]}" || exit 1
 
-echo "[4/6] Configuring file dialogs and folder handling..."
+echo "[4/7] Configuring file dialogs and folder handling..."
 configure_file_dialogs
 
-echo "[5/6] Enabling user services..."
+echo "[5/7] Configuring Chrome theme..."
+configure_chrome_theme
+
+echo "[6/7] Enabling user services..."
 if [[ $SKIP_SERVICES -eq 1 ]]; then
   echo "Skipping user systemd setup."
 elif systemctl --user show-environment >/dev/null 2>&1; then
@@ -131,7 +137,7 @@ else
   echo "Run later: systemctl --user daemon-reload && systemctl --user enable wallpaper-cycle.timer && systemctl --user start wallpaper-cycle.timer"
 fi
 
-echo "[6/6] Applying the custom XKB map..."
+echo "[7/7] Applying the custom XKB map..."
 if [[ $SKIP_XKB -eq 1 ]]; then
   echo "Skipping XKB apply."
 elif [[ -x "$HOME/.local/bin/load-xkb-shortcuts" ]]; then

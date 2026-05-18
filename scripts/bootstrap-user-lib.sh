@@ -151,6 +151,10 @@ configure_file_dialogs() {
     update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
   fi
 
+  if command -v dbus-send >/dev/null 2>&1; then
+    dbus-send --session --type=method_call --dest=org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.ReloadConfig >/dev/null 2>&1 || true
+  fi
+
   if command -v gsettings >/dev/null 2>&1; then
     gsettings set org.gnome.desktop.interface gtk-theme "$gtk_theme" >/dev/null 2>&1 || true
     gsettings set org.gnome.desktop.interface color-scheme prefer-dark >/dev/null 2>&1 || true
@@ -161,6 +165,26 @@ configure_file_dialogs() {
     gsettings set org.nemo.list-view default-visible-columns "['name', 'size', 'type', 'date_modified']" >/dev/null 2>&1 || true
     gsettings set org.nemo.list-view default-column-order "['name', 'size', 'type', 'date_modified']" >/dev/null 2>&1 || true
     gsettings set org.nemo.list-view default-zoom-level smaller >/dev/null 2>&1 || true
+
+    if gsettings writable com.github.maoschanz.drawing deco-type >/dev/null 2>&1; then
+      gsettings set com.github.maoschanz.drawing dark-theme-variant true >/dev/null 2>&1 || true
+      gsettings set com.github.maoschanz.drawing deco-type mts >/dev/null 2>&1 || true
+      gsettings set com.github.maoschanz.drawing show-labels false >/dev/null 2>&1 || true
+      gsettings set com.github.maoschanz.drawing ui-background-rgba "['0.047', '0.067', '0.086', '1.0']" >/dev/null 2>&1 || true
+    fi
+
+    if gsettings writable org.xfce.mousepad.preferences.view color-scheme >/dev/null 2>&1; then
+      gsettings set org.xfce.mousepad.preferences.view color-scheme dotfiles-dark-blue >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.preferences.view highlight-current-line true >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.preferences.view word-wrap true >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.preferences.view tab-width 4 >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.preferences.window menubar-visible true >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.preferences.window toolbar-visible false >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.preferences.window statusbar-visible true >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.preferences.window client-side-decorations false >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.state.window width 900 >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.state.window height 600 >/dev/null 2>&1 || true
+    fi
   fi
 
   if [[ $skip_services -eq 1 ]]; then
@@ -169,6 +193,27 @@ configure_file_dialogs() {
     systemctl --user restart xdg-desktop-portal xdg-desktop-portal-gtk >/dev/null 2>&1 || true
   else
     echo "Skipping portal restart: user manager is unavailable."
+  fi
+}
+
+configure_chrome_theme() {
+  local dotfiles_dir="${DOTFILES_DIR:?DOTFILES_DIR must be set}"
+  local policy_file="/etc/opt/chrome/policies/managed/dotfiles-dark-blue-theme.json"
+  local policy_source="$dotfiles_dir/root/etc/opt/chrome/policies/managed/dotfiles-dark-blue-theme.json"
+  local launcher="$HOME/.local/bin/google-chrome-dotfiles"
+
+  if [[ -f "$policy_file" ]]; then
+    echo "Chrome dark-blue theme policy is installed: $policy_file"
+  else
+    echo "Chrome dark-blue theme policy is not installed." >&2
+    echo "Run this once, then fully restart Chrome:" >&2
+    echo "  sudo install -Dm644 $policy_source $policy_file" >&2
+  fi
+
+  if [[ -x "$launcher" ]]; then
+    echo "Chrome launcher deployed: $launcher"
+  else
+    echo "Chrome theme launcher missing or not executable after stow: $launcher" >&2
   fi
 }
 

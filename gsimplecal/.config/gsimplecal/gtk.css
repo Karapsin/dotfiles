@@ -121,15 +121,10 @@ button.polybar-calendar-nav:hover {
     border-color: #3A78A2;
 }
 
-.polybar-calendar-weekday,
-.polybar-calendar-side-label {
+.polybar-calendar-weekday {
     color: #9CCFD8;
     min-height: 1.8em;
     min-width: 2.45em;
-}
-
-.polybar-calendar-side-label {
-    color: #6F8798;
 }
 
 .polybar-calendar-day {

@@ -38,10 +38,16 @@ pasystray
 blueman
 libnotify
 nemo
+drawing
+mousepad
 gvfs
 xdg-desktop-portal
 xdg-desktop-portal-gtk
 adw-gtk-theme
+
+# Media playback
+mpv
+yt-dlp
 
 # Script/runtime dependencies used by the repo
 python
