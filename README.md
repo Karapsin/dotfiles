@@ -45,6 +45,24 @@ For per-user system integration on the configured machine:
 ./bootstrap.sh --user-light --enable-linger --enable-login-wallpaper
 ```
 
+## Personal Bootstrap Values
+
+Per-user bootstraps read local personal values from repo-root `.env`. That file
+is ignored by Git. Copy [`.env.example`](.env.example) to `.env`, or let
+`./bootstrap.sh --user` or `./bootstrap.sh --user-light` prompt for missing
+values and create it.
+
+The required values are:
+- `DOTFILES_GIT_NAME`
+- `DOTFILES_GIT_EMAIL`
+- `DOTFILES_GTK_DOWNLOADS_DIR`
+- `DOTFILES_GTK_PROJECTS_DIR`
+
+After Stow runs, the user bootstraps generate marked local files at
+`~/.gitconfig` and `~/.config/gtk-3.0/bookmarks` from those values. Existing
+unmanaged files are backed up under `~/.dotfiles-bootstrap-backup/<timestamp>/`,
+or rejected when `--no-backup` is set. `bootstrap-root.sh` does not read `.env`.
+
 ## What The Scripts Do
 
 `bootstrap.sh` dispatches to exactly one mode and forwards the remaining
@@ -64,9 +82,11 @@ The direct scripts remain valid entrypoints for compatibility.
 - optionally installs LightDM packages from [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt), the dark blue GTK greeter theme, and the wallpaper sync units
 
 `bootstrap-user.sh`:
+- prompts for missing values in `.env`
 - backs up unmanaged target files that would conflict with Stow links
 - pulls Git LFS assets when `git-lfs` is installed
 - stows packages from [`packages/stow.txt`](packages/stow.txt)
+- generates local `~/.gitconfig` and GTK bookmarks from `.env`
 - bootstraps `yay` if needed
 - installs AUR packages from [`packages/aur.txt`](packages/aur.txt)
 - verifies executable bits for scripts used by the desktop config
@@ -75,9 +95,11 @@ The direct scripts remain valid entrypoints for compatibility.
 - applies the custom XKB map immediately
 
 `bootstrap-user-light.sh`:
+- prompts for missing values in `.env`
 - backs up unmanaged target files that would conflict with Stow links
 - pulls Git LFS assets when `git-lfs` is installed
 - stows packages from [`packages/stow.txt`](packages/stow.txt)
+- generates local `~/.gitconfig` and GTK bookmarks from `.env`
 - verifies executable bits for scripts used by the desktop config
 - enables the wallpaper timer when the user systemd manager is available
 - deploys the Chrome launcher and checks for the dark-blue theme policy
@@ -122,6 +144,7 @@ keyboard layout switching through the custom XKB setup.
 | --- | --- |
 | `$mod+Enter` / `$mod+Keypad Enter` | Launch terminal (like Windows Terminal or Command Prompt) |
 | `$mod+d` | Open Rofi application launcher (like Start menu search) |
+| `$mod+Shift+/` | Open Rofi shortcut cheat sheet |
 | `$mod+Shift+e` | Open Nemo file manager (like Windows File Explorer) |
 | `$mod+n` | Open Mousepad (like Windows Notepad) |
 | `$mod+Shift+s` | Start Flameshot screenshot selection (like Snipping Tool) |

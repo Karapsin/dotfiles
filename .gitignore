@@ -1,3 +1,4 @@
+/.env
 .wallpapers/current_wallpaper.png
 .wallpapers/state/
 **/__pycache__/
