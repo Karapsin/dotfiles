@@ -48,6 +48,7 @@ bindcode $mod+Shift+61 exec --no-startup-id $i3dir/shortcut-cheatsheet.sh
 bindsym $mod+Shift+e exec --no-startup-id nemo --no-desktop
 bindsym $mod+n exec --no-startup-id mousepad
 bindsym $mod+Shift+s exec --no-startup-id flameshot gui
+bindsym Print exec --no-startup-id flameshot full -c
 bindsym Ctrl+Shift+l exec --no-startup-id betterlockscreen -l dim
 bindsym $mod+Shift+p exec --no-startup-id $HOME/.config/polybar/powermenu.sh
 bindsym $mod+c exec --no-startup-id $HOME/.local/bin/google-chrome-dotfiles

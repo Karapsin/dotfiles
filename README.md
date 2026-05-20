@@ -148,6 +148,7 @@ keyboard layout switching through the custom XKB setup.
 | `$mod+Shift+e` | Open Nemo file manager (like Windows File Explorer) |
 | `$mod+n` | Open Mousepad (like Windows Notepad) |
 | `$mod+Shift+s` | Start Flameshot screenshot selection (like Snipping Tool) |
+| `Print Screen` | Copy a full desktop screenshot to the clipboard with Flameshot |
 | `Ctrl+Shift+l` | Lock the screen with Betterlockscreen |
 | `$mod+c` | Launch Chrome through the dotfiles wrapper |
 | `$mod+g` | Launch Steam |
