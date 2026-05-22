@@ -123,6 +123,7 @@ EXPECTED_EXECUTABLES=(
   "$HOME/.local/bin/drawing"
   "$HOME/.local/bin/google-chrome-dotfiles"
   "$HOME/.local/bin/load-xkb-shortcuts"
+  "$HOME/.local/bin/positron"
   "$HOME/.wallpapers/bin/update_betterlockscreen_cache.sh"
   "$HOME/.wallpapers/bin/wallpaper_cycle.py"
 )
@@ -163,6 +164,11 @@ if [[ $ENABLE_LOGIN_WALLPAPER -eq 1 ]]; then
   if [[ -f /etc/systemd/system/wallpaper-login-copy@.timer ]]; then
     echo "Enabling login wallpaper timer for $TARGET_USER..."
     sudo systemctl enable --now "wallpaper-login-copy@${TARGET_USER}.timer"
+    if [[ -f "$HOME/.wallpapers/current_wallpaper.png" ]]; then
+      sudo systemctl start "wallpaper-login-copy@${TARGET_USER}.service"
+    else
+      echo "Skipping immediate login wallpaper sync: ~/.wallpapers/current_wallpaper.png is not installed yet."
+    fi
   else
     echo "Skipping login wallpaper timer: /etc/systemd/system/wallpaper-login-copy@.timer is not installed." >&2
     echo "Run sudo ./bootstrap-root.sh --with-lightdm once on this machine if LightDM integration is desired." >&2

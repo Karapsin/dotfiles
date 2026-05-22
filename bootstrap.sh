@@ -12,12 +12,12 @@ Choose exactly one mode:
   --user-light   Run bootstrap-user-light.sh.
 
 Examples:
-  sudo ./bootstrap.sh --root --enable-networkmanager --with-lightdm
+  sudo ./bootstrap.sh --root --enable-networkmanager --with-lightdm --enable-multilib --vulkan-provider auto
   ./bootstrap.sh --user --noconfirm
   ./bootstrap.sh --user-light --enable-linger --enable-login-wallpaper
 
 Direct script entrypoints remain supported:
-  sudo ./bootstrap-root.sh --enable-networkmanager --with-lightdm
+  sudo ./bootstrap-root.sh --enable-networkmanager --with-lightdm --enable-multilib --vulkan-provider auto
   ./bootstrap-user.sh --noconfirm
   ./bootstrap-user-light.sh --enable-linger
 EOF
@@ -36,7 +36,7 @@ Choose bootstrap mode:
 
   1) Root bootstrap
      Use with sudo on a fresh install or when system packages, keyboard
-     baseline, NetworkManager, LightDM, or system units need setup.
+     baseline, NetworkManager, multilib, LightDM, or system units need setup.
 
   2) User bootstrap
      Use as your normal user after root bootstrap. Stows dotfiles, installs

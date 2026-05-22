@@ -54,6 +54,12 @@ python
 jq
 yad
 github-cli
+curl
+go
+jdk17-openjdk
+libcap
+desktop-file-utils
+hicolor-icon-theme
 
 # Fonts used by desktop UI and polybar
 noto-fonts

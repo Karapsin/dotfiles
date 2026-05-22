@@ -95,7 +95,11 @@ run_stow_dry_runs() {
   local tmp_target
 
   echo "[4/8] Running stow dry-runs..."
-  require_command stow
+  if ! command -v stow >/dev/null 2>&1; then
+    echo "Skipping stow dry-runs: stow is unavailable."
+    return 0
+  fi
+
   tmp_target="$(mktemp -d)"
   trap 'rm -rf "$tmp_target"' RETURN
 

@@ -1,6 +1,5 @@
 # AUR applications referenced by the current desktop config
 betterlockscreen
 google-chrome
-nekoray-bin
 positron-ide-devel-bin
 rstudio-desktop-bin

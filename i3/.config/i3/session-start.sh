@@ -41,6 +41,20 @@ start_once_pattern() {
   start_detached "$@"
 }
 
+: "${XDG_CURRENT_DESKTOP:=i3}"
+: "${DESKTOP_SESSION:=i3}"
+export XDG_CURRENT_DESKTOP DESKTOP_SESSION
+
+if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+  dbus-update-activation-environment --systemd DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP DESKTOP_SESSION >/dev/null 2>&1 || true
+fi
+
+if command -v systemctl >/dev/null 2>&1 && systemctl --user show-environment >/dev/null 2>&1; then
+  systemctl --user import-environment DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP DESKTOP_SESSION >/dev/null 2>&1 || true
+  systemctl --user reset-failed xdg-desktop-portal.service xdg-desktop-portal-gtk.service >/dev/null 2>&1 || true
+  systemctl --user restart xdg-desktop-portal.service xdg-desktop-portal-gtk.service >/dev/null 2>&1 &
+fi
+
 if command -v python3 >/dev/null 2>&1 && [ -f "$HOME/.wallpapers/bin/wallpaper_cycle.py" ]; then
   python3 "$HOME/.wallpapers/bin/wallpaper_cycle.py" --apply-current >/dev/null 2>&1 &
 fi

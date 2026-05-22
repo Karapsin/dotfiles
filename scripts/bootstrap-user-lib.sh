@@ -17,6 +17,60 @@ require_command() {
   fi
 }
 
+retry_command() {
+  local attempts=$1
+  local delay_seconds=$2
+  local label=$3
+  local attempt
+  shift 3
+
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    if "$@"; then
+      return 0
+    fi
+
+    if [[ $attempt -lt $attempts ]]; then
+      echo "$label failed (attempt $attempt/$attempts); retrying in ${delay_seconds}s..." >&2
+      sleep "$delay_seconds"
+    fi
+  done
+
+  echo "$label failed after $attempts attempts." >&2
+  return 1
+}
+
+retry_git_clone() {
+  local attempts=$1
+  local delay_seconds=$2
+  local label=$3
+  local target
+  local attempt
+  shift 3
+
+  target="${@: -1}"
+  case "$target" in
+    ""|"/"|"$HOME"|"$HOME/.cache"|"$HOME/.cache/dotfiles")
+      echo "Refusing unsafe Git clone retry target: $target" >&2
+      return 1
+      ;;
+  esac
+
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
+    rm -rf -- "$target"
+    if "$@"; then
+      return 0
+    fi
+
+    if [[ $attempt -lt $attempts ]]; then
+      echo "$label failed (attempt $attempt/$attempts); retrying in ${delay_seconds}s..." >&2
+      sleep "$delay_seconds"
+    fi
+  done
+
+  echo "$label failed after $attempts attempts." >&2
+  return 1
+}
+
 is_git_worktree() {
   local dotfiles_dir="${DOTFILES_DIR:?DOTFILES_DIR must be set}"
   git -C "$dotfiles_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1
@@ -33,6 +87,7 @@ pull_lfs_assets() {
   elif ! is_git_worktree; then
     echo "Skipping Git LFS pull: $dotfiles_dir is not a Git repository."
   elif command -v git-lfs >/dev/null 2>&1; then
+    git -C "$dotfiles_dir" lfs install --local
     git -C "$dotfiles_dir" lfs pull || true
   else
     echo "Skipping Git LFS pull: git-lfs is unavailable."
@@ -189,7 +244,10 @@ configure_file_dialogs() {
 
   if [[ $skip_services -eq 1 ]]; then
     echo "Skipping portal restart."
+  elif [[ -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]]; then
+    echo "Skipping portal restart: graphical display is unavailable."
   elif systemctl --user show-environment >/dev/null 2>&1; then
+    systemctl --user import-environment DISPLAY WAYLAND_DISPLAY XAUTHORITY XDG_CURRENT_DESKTOP DESKTOP_SESSION >/dev/null 2>&1 || true
     systemctl --user restart xdg-desktop-portal xdg-desktop-portal-gtk >/dev/null 2>&1 || true
   else
     echo "Skipping portal restart: user manager is unavailable."
@@ -214,6 +272,70 @@ configure_chrome_theme() {
     echo "Chrome launcher deployed: $launcher"
   else
     echo "Chrome theme launcher missing or not executable after stow: $launcher" >&2
+  fi
+}
+
+install_vpn_control() {
+  local repo_url="${DOTFILES_VPN_CONTROL_REPO:-https://github.com/karapsin/vpn_control_android}"
+  local repo_branch="${DOTFILES_VPN_CONTROL_BRANCH:-main}"
+  local cache_dir="${DOTFILES_VPN_CONTROL_DIR:-$HOME/.cache/dotfiles/vpn_control_android}"
+  local gradle_wrapper_properties
+  local cache_parent
+
+  require_command git
+
+  case "$cache_dir" in
+    ""|"/"|"$HOME"|"$HOME/.cache"|"$HOME/.cache/dotfiles")
+      echo "Refusing unsafe VPN Control checkout directory: $cache_dir" >&2
+      exit 1
+      ;;
+  esac
+
+  cache_parent="$(dirname -- "$cache_dir")"
+  mkdir -p -- "$cache_parent"
+
+  if [[ -d "$cache_dir/.git" ]]; then
+    echo "Updating VPN Control checkout: $cache_dir"
+    git -C "$cache_dir" remote set-url origin "$repo_url"
+    retry_command 5 10 "Fetching VPN Control" \
+      git -C "$cache_dir" fetch --depth 1 origin "$repo_branch"
+    git -C "$cache_dir" checkout -B "$repo_branch" "origin/$repo_branch"
+    git -C "$cache_dir" reset --hard "origin/$repo_branch"
+  else
+    if [[ -e "$cache_dir" ]]; then
+      echo "Replacing non-Git VPN Control checkout directory: $cache_dir"
+      rm -rf -- "$cache_dir"
+    fi
+    echo "Cloning VPN Control from $repo_url..."
+    retry_git_clone 5 10 "Cloning VPN Control" \
+      git clone --depth 1 --branch "$repo_branch" "$repo_url" "$cache_dir"
+  fi
+
+  if [[ ! -x "$cache_dir/scripts/arch_install.sh" ]]; then
+    echo "VPN Control Arch installer is missing or not executable: $cache_dir/scripts/arch_install.sh" >&2
+    exit 1
+  fi
+
+  gradle_wrapper_properties="$cache_dir/gradle/wrapper/gradle-wrapper.properties"
+  if [[ -f "$gradle_wrapper_properties" ]]; then
+    if grep -Eq '^networkTimeout=' "$gradle_wrapper_properties"; then
+      sed -i 's/^networkTimeout=.*/networkTimeout=120000/' "$gradle_wrapper_properties"
+    else
+      printf '%s\n' 'networkTimeout=120000' >> "$gradle_wrapper_properties"
+    fi
+  fi
+
+  echo "Installing VPN Control..."
+  (
+    cd "$cache_dir"
+    retry_command 5 10 "Installing VPN Control" \
+      ./scripts/arch_install.sh --skip-deps --no-start
+  )
+
+  hash -r
+  if ! command -v vpn-control >/dev/null 2>&1; then
+    echo "VPN Control installer completed, but vpn-control is not on PATH." >&2
+    exit 1
   fi
 }
 

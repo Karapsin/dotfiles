@@ -91,13 +91,14 @@ ensure_yay() {
   trap 'rm -rf "$tmpdir"' RETURN
 
   echo "Bootstrapping yay..."
-  git clone https://aur.archlinux.org/yay.git "$tmpdir/yay"
+  retry_git_clone 5 10 "Cloning yay from AUR" \
+    git clone https://aur.archlinux.org/yay.git "$tmpdir/yay"
   pushd "$tmpdir/yay" >/dev/null
+  MAKEPKG_ARGS=(-si --needed)
   if [[ $NO_CONFIRM -eq 1 ]]; then
-    makepkg -si --needed --noconfirm
-  else
-    makepkg -si --needed
+    MAKEPKG_ARGS+=(--noconfirm)
   fi
+  retry_command 5 10 "Building and installing yay" makepkg "${MAKEPKG_ARGS[@]}"
   popd >/dev/null
   trap - RETURN
   rm -rf "$tmpdir"
@@ -106,20 +107,20 @@ ensure_yay() {
 require_command stow
 ensure_dotfiles_env_values
 
-echo "[1/9] Preparing stow targets..."
+echo "[1/10] Preparing stow targets..."
 BACKUP_DIR="$HOME/.dotfiles-bootstrap-backup/$(date +%Y%m%d-%H%M%S)"
 cleanup_legacy_wallpaper_links
 backup_or_reject_conflicts "$BACKUP_DIR"
 backup_or_reject_generated_targets "$BACKUP_DIR"
 
-echo "[2/9] Pulling Git LFS assets (if available)..."
+echo "[2/10] Pulling Git LFS assets (if available)..."
 pull_lfs_assets
 
-echo "[3/9] Deploying stow packages..."
+echo "[3/10] Deploying stow packages..."
 stow --no-folding -d "$DOTFILES_DIR" -t "$HOME" -R "${STOW_PACKAGES[@]}"
 prepare_wallpaper_state
 
-echo "[4/9] Generating local personal files..."
+echo "[4/10] Generating local personal files..."
 generate_dotfiles_personal_files "$BACKUP_DIR"
 
 EXPECTED_EXECUTABLES=(
@@ -140,6 +141,7 @@ EXPECTED_EXECUTABLES=(
   "$HOME/.local/bin/drawing"
   "$HOME/.local/bin/google-chrome-dotfiles"
   "$HOME/.local/bin/load-xkb-shortcuts"
+  "$HOME/.local/bin/positron"
   "$HOME/.wallpapers/bin/update_betterlockscreen_cache.sh"
   "$HOME/.wallpapers/bin/wallpaper_cycle.py"
 )
@@ -147,24 +149,27 @@ EXPECTED_EXECUTABLES=(
 verify_expected_executables "${EXPECTED_EXECUTABLES[@]}" || exit 1
 
 if [[ $SKIP_AUR -eq 0 && ${#AUR_PACKAGES[@]} -gt 0 ]]; then
-  echo "[5/9] Installing AUR packages..."
+  echo "[5/10] Installing AUR packages..."
   ensure_yay
   YAY_ARGS=(-S --needed)
   if [[ $NO_CONFIRM -eq 1 ]]; then
     YAY_ARGS+=(--noconfirm)
   fi
-  yay "${YAY_ARGS[@]}" "${AUR_PACKAGES[@]}"
+  retry_command 5 10 "Installing AUR packages" yay "${YAY_ARGS[@]}" "${AUR_PACKAGES[@]}"
 else
-  echo "[5/9] Skipping AUR packages."
+  echo "[5/10] Skipping AUR packages."
 fi
 
-echo "[6/9] Configuring file dialogs and folder handling..."
+echo "[6/10] Installing VPN Control..."
+install_vpn_control
+
+echo "[7/10] Configuring file dialogs and folder handling..."
 configure_file_dialogs
 
-echo "[7/9] Configuring Chrome theme..."
+echo "[8/10] Configuring Chrome theme..."
 configure_chrome_theme
 
-echo "[8/9] Enabling user services..."
+echo "[9/10] Enabling user services..."
 if [[ $SKIP_SERVICES -eq 1 ]]; then
   echo "Skipping user systemd setup."
 elif systemctl --user show-environment >/dev/null 2>&1; then
@@ -174,7 +179,7 @@ else
   echo "Run later: systemctl --user daemon-reload && systemctl --user enable wallpaper-cycle.timer && systemctl --user start wallpaper-cycle.timer"
 fi
 
-echo "[9/9] Applying the custom XKB map..."
+echo "[10/10] Applying the custom XKB map..."
 if [[ $SKIP_XKB -eq 1 ]]; then
   echo "Skipping XKB apply."
 elif [[ -x "$HOME/.local/bin/load-xkb-shortcuts" ]]; then

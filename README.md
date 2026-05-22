@@ -12,16 +12,20 @@ Run these from a newly installed Arch system:
 sudo pacman -S --needed git
 git clone /path/to/your/repo ~/dotfiles
 cd ~/dotfiles
-sudo ./bootstrap.sh --root --enable-networkmanager --with-lightdm
+sudo ./bootstrap.sh --root --enable-networkmanager --with-lightdm --enable-multilib --vulkan-provider auto
 ./bootstrap.sh --user
 ```
 
 If you want unattended package installs:
 
 ```bash
-sudo ./bootstrap.sh --root --noconfirm --enable-networkmanager --with-lightdm
+sudo ./bootstrap.sh --root --noconfirm --enable-networkmanager --with-lightdm --enable-multilib --vulkan-provider auto
 ./bootstrap.sh --user --noconfirm
 ```
+
+For a QEMU/libvirt VM, use `--vulkan-provider virtio`. On real hardware, use
+`auto`, `nvidia`, `intel`, `amd`, `swrast`, or `none` when you want pacman to
+choose from already-installed providers.
 
 ## New User On An Existing Machine
 
@@ -75,11 +79,13 @@ The direct scripts remain valid entrypoints for compatibility.
 
 `bootstrap-root.sh`:
 - installs official packages from [`packages/pacman.txt`](packages/pacman.txt)
+- optionally enables the Arch `[multilib]` repository for Steam
+- installs an explicit Vulkan provider to avoid pacman provider prompts
 - sets the X11 keyboard baseline to `us,ru` with `Win+Space`
 - enables linger for the target user when possible
 - optionally enables `NetworkManager`
 - installs the Chrome dark-blue theme policy
-- optionally installs LightDM packages from [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt), the dark blue GTK greeter theme, and the wallpaper sync units
+- optionally installs and enables LightDM packages from [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt), the dark blue GTK greeter theme, and the wallpaper sync units
 
 `bootstrap-user.sh`:
 - prompts for missing values in `.env`
@@ -89,6 +95,7 @@ The direct scripts remain valid entrypoints for compatibility.
 - generates local `~/.gitconfig` and GTK bookmarks from `.env`
 - bootstraps `yay` if needed
 - installs AUR packages from [`packages/aur.txt`](packages/aur.txt)
+- installs VPN Control from the latest `main` branch of `https://github.com/karapsin/vpn_control_android`
 - verifies executable bits for scripts used by the desktop config
 - enables the wallpaper timer
 - deploys the Chrome launcher and checks for the dark-blue theme policy
@@ -157,7 +164,7 @@ keyboard layout switching through the custom XKB setup.
 | `$mod+Alt+v` | Open PulseAudio volume control (like Volume Mixer) |
 | `$mod+Alt+b` | Open Blueman manager (like Bluetooth settings) |
 | `$mod+Shift+t` | Launch Element |
-| `$mod+p` | Launch Positron (like an RStudio or VS Code-style data IDE) |
+| `$mod+p` | Launch Positron through the dotfiles wrapper (like an RStudio or VS Code-style data IDE) |
 | `$mod+Shift+d` | Launch Drawing (like Windows Paint) |
 | `$mod+Alt+r` | Launch RStudio |
 
@@ -186,5 +193,5 @@ keyboard layout switching through the custom XKB setup.
 | `$mod+Shift+q` | Close the focused window |
 | `$mod+h` / `$mod+v` | Split next container vertically or horizontally |
 | `$mod+s` / `$mod+w` / `$mod+e` | Use stacking, tabbed, or split layout |
-| `$mod+Shift+Space` | Toggle floating mode |
+| `$mod+Shift+f` | Toggle floating mode for the focused window |
 | `$mod+a` | Focus parent container |

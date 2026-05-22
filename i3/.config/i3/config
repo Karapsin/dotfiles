@@ -58,7 +58,7 @@ bindsym $mod+Shift+v exec --no-startup-id $i3dir/vpn-control-toggle.sh
 bindsym $mod+Mod1+v exec --no-startup-id pavucontrol --tab=1
 bindsym $mod+Mod1+b exec --no-startup-id $i3dir/blueman-launch.sh --manager
 bindsym $mod+Shift+t exec --no-startup-id element-desktop
-bindsym $mod+p exec --no-startup-id positron
+bindsym $mod+p exec --no-startup-id $HOME/.local/bin/positron
 bindsym $mod+Shift+d exec --no-startup-id $HOME/.local/bin/drawing
 bindsym $mod+Mod1+r exec --no-startup-id rstudio
 
@@ -89,7 +89,7 @@ bindsym $mod+f fullscreen toggle
 bindsym $mod+s layout stacking
 bindsym $mod+w layout tabbed
 bindsym $mod+e layout toggle split
-bindsym $mod+Shift+space floating toggle
+bindsym $mod+Shift+f floating toggle
 # $mod+space is reserved for keyboard layout switching via XKB.
 bindsym $mod+a focus parent
 

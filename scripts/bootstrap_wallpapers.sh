@@ -96,6 +96,11 @@ if [[ "$WITH_LIGHTDM" -eq 1 ]]; then
     /usr/share/themes/Dotfiles-DarkBlue/gtk-3.0/gtk.css
   sudo systemctl daemon-reload
   sudo systemctl enable --now "wallpaper-login-copy@${USER}.timer"
+  if [[ -f "$CURRENT" ]]; then
+    sudo systemctl start "wallpaper-login-copy@${USER}.service"
+  else
+    echo "Skipping immediate login wallpaper sync: $CURRENT is not installed yet."
+  fi
 
   # Set background for slick-greeter if present
   if [[ -f /etc/lightdm/slick-greeter.conf || -d /etc/lightdm ]]; then
