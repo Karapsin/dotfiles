@@ -89,7 +89,7 @@ def candidate_score(direction, current, candidate):
 
     # Prefer same row/column, then nearest edge, then nearest center.
     no_overlap = 1 if overlap_len == 0 else 0
-    return (no_overlap, cross, primary)
+    return (no_overlap, primary, cross)
 
 
 def main():

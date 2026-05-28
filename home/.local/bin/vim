@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+
+if command -v nvim >/dev/null 2>&1; then
+  exec nvim "$@"
+fi
+
+if [ -x /usr/bin/vim ]; then
+  exec /usr/bin/vim "$@"
+fi
+
+printf '%s\n' 'vim: nvim is not installed and /usr/bin/vim is unavailable' >&2
+exit 127

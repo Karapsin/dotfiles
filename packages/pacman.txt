@@ -62,6 +62,15 @@ libcap
 desktop-file-utils
 hicolor-icon-theme
 
+# Neovim + LazyVim
+neovim
+ripgrep
+fd
+tree-sitter-cli
+lazygit
+fzf
+xclip
+
 # Fonts used by desktop UI and polybar
 noto-fonts
 noto-fonts-emoji

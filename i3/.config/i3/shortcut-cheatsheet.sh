@@ -134,7 +134,7 @@ add_if_all() {
 
 generate_rows() {
     add_section "App Shortcuts"
-    add_if_all '$mod+Enter / $mod+Keypad Enter' 'Launch terminal (like Windows Terminal or Command Prompt)' \
+    add_if_all '$mod+Enter / $mod+Keypad Enter' 'Launch Alacritty terminal (like Windows Terminal or Command Prompt)' \
         '^[[:space:]]*bindcode[[:space:]]+\$mod\+36[[:space:]].*launch-terminal\.sh' \
         '^[[:space:]]*bindcode[[:space:]]+\$mod\+104[[:space:]].*launch-terminal\.sh'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+d[[:space:]].*rofi[[:space:]]+-show[[:space:]]+drun' \
@@ -187,11 +187,11 @@ generate_rows() {
     add_if_all '$mod+Shift+1 through $mod+Shift+0' 'Move focused window to workspace 1 through 10' \
         '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+1[[:space:]]+move[[:space:]]+container[[:space:]]+to[[:space:]]+workspace[[:space:]]+number[[:space:]]+\$ws1' \
         '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+0[[:space:]]+move[[:space:]]+container[[:space:]]+to[[:space:]]+workspace[[:space:]]+number[[:space:]]+\$ws10'
-    add_if_all '$mod+j/k/l/; or $mod+arrow keys' 'Move focus left/down/up/right' \
-        '^[[:space:]]*bindsym[[:space:]]+\$mod\+j[[:space:]].*focus-visual\.py[[:space:]]+left' \
+    add_if_all '$mod+h/j/k/l or $mod+arrow keys' 'Move focus left/down/up/right' \
+        '^[[:space:]]*bindsym[[:space:]]+\$mod\+h[[:space:]].*focus-visual\.py[[:space:]]+left' \
         '^[[:space:]]*bindsym[[:space:]]+\$mod\+Right[[:space:]].*focus-visual\.py[[:space:]]+right'
-    add_if_all '$mod+Shift+j/k/l/; or $mod+Shift+arrow keys' 'Move the focused window left/down/up/right' \
-        '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+j[[:space:]]+move[[:space:]]+left' \
+    add_if_all '$mod+Shift+h/j/k/l or $mod+Shift+arrow keys' 'Move the focused window left/down/up/right' \
+        '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+h[[:space:]]+move[[:space:]]+left' \
         '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+Right[[:space:]]+move[[:space:]]+right'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+f[[:space:]]+fullscreen[[:space:]]+toggle' \
         '$mod+f' 'Toggle fullscreen'
@@ -212,8 +212,8 @@ generate_rows() {
         '$mod+Shift+r' 'Restart i3'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+q[[:space:]]+kill' \
         '$mod+Shift+q' 'Close the focused window'
-    add_if_all '$mod+h / $mod+v' 'Split next container vertically or horizontally' \
-        '^[[:space:]]*bindsym[[:space:]]+\$mod\+h[[:space:]]+split[[:space:]]+v' \
+    add_if_all '$mod+b / $mod+v' 'Split next container vertically or horizontally' \
+        '^[[:space:]]*bindsym[[:space:]]+\$mod\+b[[:space:]]+split[[:space:]]+v' \
         '^[[:space:]]*bindsym[[:space:]]+\$mod\+v[[:space:]]+split[[:space:]]+h'
     add_if_all '$mod+s / $mod+w / $mod+e' 'Use stacking, tabbed, or split layout' \
         '^[[:space:]]*bindsym[[:space:]]+\$mod\+s[[:space:]]+layout[[:space:]]+stacking' \

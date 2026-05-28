@@ -240,7 +240,7 @@ The `$mod+Shift+/` cheat sheet uses the same grouping order as the tables below.
 
 | Shortcut | Action |
 | --- | --- |
-| `$mod+Enter` / `$mod+Keypad Enter` | Launch terminal (like Windows Terminal or Command Prompt) |
+| `$mod+Enter` / `$mod+Keypad Enter` | Launch Alacritty terminal (like Windows Terminal or Command Prompt) |
 | `$mod+d` | Open Rofi application launcher (like Start menu search) |
 | `$mod+Shift+/` | Open Rofi shortcut cheat sheet |
 | `$mod+Shift+e` | Open Nemo file manager (like Windows File Explorer) |
@@ -273,8 +273,8 @@ The `$mod+Shift+/` cheat sheet uses the same grouping order as the tables below.
 | --- | --- |
 | `$mod+1` through `$mod+0` | Switch to workspace 1 through 10 |
 | `$mod+Shift+1` through `$mod+Shift+0` | Move focused window to workspace 1 through 10 |
-| `$mod+j/k/l/;` or `$mod+arrow keys` | Move focus left/down/up/right |
-| `$mod+Shift+j/k/l/;` or `$mod+Shift+arrow keys` | Move the focused window left/down/up/right |
+| `$mod+h/j/k/l` or `$mod+arrow keys` | Move focus left/down/up/right |
+| `$mod+Shift+h/j/k/l` or `$mod+Shift+arrow keys` | Move the focused window left/down/up/right |
 | `$mod+f` | Toggle fullscreen |
 | `$mod+r` | Enter resize mode |
 | resize mode: `j/k/l/;` or arrow keys | Resize the focused window |
@@ -283,7 +283,7 @@ The `$mod+Shift+/` cheat sheet uses the same grouping order as the tables below.
 | `XF86AudioMute` | Toggle audio mute |
 | `$mod+Shift+r` | Restart i3 |
 | `$mod+Shift+q` | Close the focused window |
-| `$mod+h` / `$mod+v` | Split next container vertically or horizontally |
+| `$mod+b` / `$mod+v` | Split next container vertically or horizontally |
 | `$mod+s` / `$mod+w` / `$mod+e` | Use stacking, tabbed, or split layout |
 | `$mod+Shift+f` | Toggle floating mode for the focused window |
 | `$mod+Alt+a` | Toggle automatic tiling |

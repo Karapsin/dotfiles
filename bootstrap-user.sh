@@ -148,6 +148,7 @@ EXPECTED_EXECUTABLES=(
   "$HOME/.local/bin/google-chrome-dotfiles"
   "$HOME/.local/bin/load-xkb-shortcuts"
   "$HOME/.local/bin/positron"
+  "$HOME/.local/bin/vim"
   "$HOME/.wallpapers/bin/update_betterlockscreen_cache.sh"
   "$HOME/.wallpapers/bin/wallpaper_cycle.py"
 )
