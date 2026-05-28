@@ -83,17 +83,12 @@ if [[ "$WITH_LIGHTDM" -eq 1 ]]; then
   sudo install -m 0644 "$DOTFILES_DIR/root/etc/systemd/system/wallpaper-login-copy@.timer"   /etc/systemd/system/
   sudo cp -n /etc/lightdm/lightdm-gtk-greeter.conf /etc/lightdm/lightdm-gtk-greeter.conf.bak 2>/dev/null || true
   sudo install -Dm644 \
-    "$DOTFILES_DIR/root/etc/lightdm/lightdm-gtk-greeter.conf" \
-    /etc/lightdm/lightdm-gtk-greeter.conf
-  sudo install -Dm644 \
     "$DOTFILES_DIR/root/etc/lightdm/lightdm.conf.d/50-dotfiles-greeter.conf" \
     /etc/lightdm/lightdm.conf.d/50-dotfiles-greeter.conf
   sudo install -Dm644 \
     "$DOTFILES_DIR/root/usr/share/themes/Dotfiles-DarkBlue/index.theme" \
     /usr/share/themes/Dotfiles-DarkBlue/index.theme
-  sudo install -Dm644 \
-    "$DOTFILES_DIR/root/usr/share/themes/Dotfiles-DarkBlue/gtk-3.0/gtk.css" \
-    /usr/share/themes/Dotfiles-DarkBlue/gtk-3.0/gtk.css
+  sudo bash "$DOTFILES_DIR/scripts/render-root-ui.sh"
   sudo systemctl daemon-reload
   sudo systemctl enable --now "wallpaper-login-copy@${USER}.timer"
   if [[ -f "$CURRENT" ]]; then

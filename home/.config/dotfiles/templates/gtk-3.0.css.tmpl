@@ -103,14 +103,14 @@ row {
 
 notebook header {
   background-color: #151b24;
-  border-bottom: 1px solid @border_color;
+  border-bottom: @DOTFILES_UI_RESOLVED_GTK_CONTROL_BORDER_WIDTH@px solid @border_color;
 }
 
 notebook tab {
   background-color: #151b24;
   color: @theme_fg_color;
   border-color: transparent;
-  padding: 7px 12px;
+  padding: @DOTFILES_UI_RESOLVED_GTK3_TAB_PADDING_Y@px @DOTFILES_UI_RESOLVED_GTK3_TAB_PADDING_X@px;
 }
 
 notebook tab:hover {
@@ -120,7 +120,7 @@ notebook tab:hover {
 notebook tab:checked {
   background-color: @accent_bg_color;
   color: @accent_fg_color;
-  border-bottom: 3px solid #9ccfd8;
+  border-bottom: @DOTFILES_UI_RESOLVED_GTK_ACTIVE_BORDER_WIDTH@px solid #9ccfd8;
 }
 
 button,
@@ -130,8 +130,8 @@ entry,
 spinbutton {
   background-color: @theme_base_color;
   color: @theme_fg_color;
-  border: 1px solid @border_color;
-  border-radius: 5px;
+  border: @DOTFILES_UI_RESOLVED_GTK_CONTROL_BORDER_WIDTH@px solid @border_color;
+  border-radius: @DOTFILES_UI_RESOLVED_GTK_CONTROL_RADIUS@px;
 }
 
 button:hover,
@@ -165,27 +165,27 @@ row:selected,
 
 scale trough {
   background-color: #29313a;
-  border-radius: 999px;
-  min-height: 4px;
+  border-radius: @DOTFILES_UI_RESOLVED_GTK_PILL_RADIUS@px;
+  min-height: @DOTFILES_UI_RESOLVED_GTK_SCALE_TROUGH_HEIGHT@px;
 }
 
 scale highlight {
   background-color: #6aa5d8;
-  border-radius: 999px;
+  border-radius: @DOTFILES_UI_RESOLVED_GTK_PILL_RADIUS@px;
 }
 
 scale slider {
   background-color: #d7dde4;
-  border: 1px solid #8a949e;
-  border-radius: 999px;
-  min-width: 16px;
-  min-height: 16px;
+  border: @DOTFILES_UI_RESOLVED_GTK_SCALE_SLIDER_BORDER_WIDTH@px solid #8a949e;
+  border-radius: @DOTFILES_UI_RESOLVED_GTK_PILL_RADIUS@px;
+  min-width: @DOTFILES_UI_RESOLVED_GTK_SCALE_SLIDER_SIZE@px;
+  min-height: @DOTFILES_UI_RESOLVED_GTK_SCALE_SLIDER_SIZE@px;
 }
 
 switch {
   background-color: #29313a;
-  border: 1px solid @border_color;
-  border-radius: 999px;
+  border: @DOTFILES_UI_RESOLVED_GTK_CONTROL_BORDER_WIDTH@px solid @border_color;
+  border-radius: @DOTFILES_UI_RESOLVED_GTK_PILL_RADIUS@px;
 }
 
 switch:checked {
@@ -195,10 +195,10 @@ switch:checked {
 
 switch slider {
   background-color: #d7dde4;
-  border-radius: 999px;
+  border-radius: @DOTFILES_UI_RESOLVED_GTK_PILL_RADIUS@px;
 }
 
 separator {
   background-color: @border_color;
-  min-height: 1px;
+  min-height: @DOTFILES_UI_RESOLVED_GTK_SEPARATOR_HEIGHT@px;
 }

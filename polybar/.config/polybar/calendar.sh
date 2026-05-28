@@ -1,4 +1,12 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ui_helper="${DOTFILES_UI_HELPER:-$HOME/.config/dotfiles/ui-sizes.sh}"
+if [[ ! -r "$ui_helper" ]]; then
+  ui_helper="$script_dir/../../../home/.config/dotfiles/ui-sizes.sh"
+fi
+# shellcheck disable=SC1090
+source "$ui_helper"
 
 case "$1" in
   --popup)
@@ -87,7 +95,10 @@ def estimated_size(rect, state_file):
         except Exception:
             pass
 
-    return round(rect["width"] * 0.092), round(rect["height"] * 0.124)
+    return (
+        round(rect["width"] * ui_int("DOTFILES_UI_CALENDAR_FALLBACK_WIDTH_PERMILLE", 92) / 1000),
+        round(rect["height"] * ui_int("DOTFILES_UI_CALENDAR_FALLBACK_HEIGHT_PERMILLE", 124) / 1000),
+    )
 
 
 def safe_name(value):
@@ -102,13 +113,17 @@ def positive_int(value, default):
         return default
 
 
+def ui_int(name, default):
+    return positive_int(os.environ.get(name), default)
+
+
 def output_dpi(output_name):
     configured = positive_int(os.environ.get("POLYBAR_DPI"), 0)
     if configured:
         return configured
 
     if not output_name or not shutil.which("xrandr"):
-        return 96
+        return ui_int("DOTFILES_UI_RESOLVED_POLYBAR_DPI", ui_int("DOTFILES_UI_POLYBAR_DPI", 96))
 
     try:
         output = subprocess.check_output(
@@ -147,13 +162,16 @@ def output_dpi(output_name):
         if width > 0 and mm_width > 0:
             return round(width * 25.4 / mm_width)
 
-    return 96
+    return ui_int("DOTFILES_UI_RESOLVED_POLYBAR_DPI", ui_int("DOTFILES_UI_POLYBAR_DPI", 96))
 
 
 def polybar_font_description():
     font = os.environ.get(
         "POLYBAR_FONT_0",
-        "Noto Sans Mono,Liberation Mono,DejaVu Sans Mono:size=11;2",
+        os.environ.get(
+            "DOTFILES_UI_RESOLVED_POLYBAR_FONT_0",
+            os.environ.get("DOTFILES_UI_POLYBAR_FONT_0", "Noto Sans Mono,Liberation Mono,DejaVu Sans Mono:size=11;2"),
+        ),
     )
     family, _, options = font.partition(":")
     family = family.split(",", 1)[0].strip() or "monospace"
@@ -166,24 +184,43 @@ def polybar_font_description():
     return f"{family} {size}"
 
 
-def adaptive_ui_metrics(rect, dpi):
-    width = max(1, int(rect.get("width") or 3840))
-    height = max(1, int(rect.get("height") or 2160))
-    scale = min(width / 3840, height / 2160)
-    scale = max(0.75, min(scale, 1.8))
-
-    if dpi > 96:
-        scale = max(scale, min(dpi / 96, 1.8))
-
-    return {
-        "@font_size_px@": str(max(10, round(13 * scale))),
-        "@border_width_px@": str(max(1, round(scale))),
-    }
+def ui_resolved_value(name, default):
+    resolved_name = name.replace("DOTFILES_UI_", "DOTFILES_UI_RESOLVED_", 1)
+    return os.environ.get(resolved_name, os.environ.get(name, default))
 
 
-def render_gtk_css(css, rect, dpi):
-    for placeholder, value in adaptive_ui_metrics(rect, dpi).items():
+def render_gtk_css(css):
+    for placeholder, value in {
+        "@font_size_px@": str(
+            ui_int(
+                "DOTFILES_UI_RESOLVED_CALENDAR_FONT_PX",
+                max(ui_int("DOTFILES_UI_CALENDAR_FONT_MIN_PX", 10), ui_int("DOTFILES_UI_CALENDAR_FONT_BASE_PX", 13)),
+            )
+        ),
+        "@border_width_px@": str(
+            ui_int(
+                "DOTFILES_UI_RESOLVED_CALENDAR_BORDER_PX",
+                max(ui_int("DOTFILES_UI_CALENDAR_BORDER_MIN_PX", 1), ui_int("DOTFILES_UI_CALENDAR_BORDER_BASE_PX", 1)),
+            )
+        ),
+    }.items():
         css = css.replace(placeholder, value)
+
+    for placeholder, env_name in {
+        "@gsimplecal_window_radius_em@": "DOTFILES_UI_GSIMPLECAL_WINDOW_RADIUS_EM",
+        "@gsimplecal_padding_em@": "DOTFILES_UI_GSIMPLECAL_PADDING_EM",
+        "@gsimplecal_button_padding_y_em@": "DOTFILES_UI_GSIMPLECAL_BUTTON_PADDING_Y_EM",
+        "@gsimplecal_button_padding_x_em@": "DOTFILES_UI_GSIMPLECAL_BUTTON_PADDING_X_EM",
+        "@gsimplecal_button_radius_em@": "DOTFILES_UI_GSIMPLECAL_BUTTON_RADIUS_EM",
+        "@gsimplecal_popup_padding_em@": "DOTFILES_UI_GSIMPLECAL_POPUP_PADDING_EM",
+        "@gsimplecal_header_margin_em@": "DOTFILES_UI_GSIMPLECAL_HEADER_MARGIN_EM",
+        "@gsimplecal_nav_radius_em@": "DOTFILES_UI_GSIMPLECAL_NAV_RADIUS_EM",
+        "@gsimplecal_nav_min_size_em@": "DOTFILES_UI_GSIMPLECAL_NAV_MIN_SIZE_EM",
+        "@gsimplecal_weekday_min_height_em@": "DOTFILES_UI_GSIMPLECAL_WEEKDAY_MIN_HEIGHT_EM",
+        "@gsimplecal_weekday_min_width_em@": "DOTFILES_UI_GSIMPLECAL_WEEKDAY_MIN_WIDTH_EM",
+        "@gsimplecal_day_radius_em@": "DOTFILES_UI_GSIMPLECAL_DAY_RADIUS_EM",
+    }.items():
+        css = css.replace(placeholder, ui_resolved_value(env_name, "0"))
 
     return css
 
@@ -207,7 +244,7 @@ def ensure_monday_locale(config_home):
 
 
 def measure_text_width(text, rect, dpi):
-    fallback_char_width = max(1, round(rect["height"] * 0.007))
+    fallback_char_width = max(1, round(rect["height"] * ui_int("DOTFILES_UI_CALENDAR_FALLBACK_CHAR_WIDTH_PERMILLE", 7) / 1000))
     fallback = len(text) * fallback_char_width
     if not shutil.which("pango-view") or not shutil.which("identify"):
         return fallback
@@ -268,8 +305,8 @@ try:
         focused_workspace,
     )
     rect = workspace["rect"]
-    margin = round(rect["width"] * 0.006)
-    gap = round(rect["height"] * 0.006)
+    margin = round(rect["width"] * ui_int("DOTFILES_UI_CALENDAR_MARGIN_PERMILLE", 6) / 1000)
+    gap = round(rect["height"] * ui_int("DOTFILES_UI_CALENDAR_GAP_PERMILLE", 6) / 1000)
 
     config_home = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "gsimplecal-polybar"
     ensure_monday_locale(config_home)
@@ -335,7 +372,7 @@ try:
 
     for theme_css in theme_css_candidates:
         if theme_css.is_file():
-            (gtk_dir / "gtk.css").write_text(render_gtk_css(theme_css.read_text(), rect, dpi))
+            (gtk_dir / "gtk.css").write_text(render_gtk_css(theme_css.read_text()))
             break
 
     print(

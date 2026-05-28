@@ -6,7 +6,9 @@ import math
 import os
 import re
 import signal
+import subprocess
 import sys
+from pathlib import Path
 
 VERSION = "1.0.2"
 UPSTREAM_DRAWING_BIN = "/usr/bin/drawing"
@@ -141,25 +143,130 @@ if _compatibility_error is not None:
     _run_upstream_drawing(_compatibility_error)
 
 
-HANDLE_SIZE = 9
-HANDLE_HIT_SIZE = 12
-ROTATE_HANDLE_SIZE = 13
-ROTATE_HANDLE_HIT_SIZE = 18
-ROTATE_HANDLE_OFFSET = 28
+def _ui_helper_candidates():
+    resolved_self = Path(__file__).expanduser().resolve()
+    yield Path.home() / ".config" / "dotfiles" / "ui-sizes.sh"
+    yield resolved_self.parents[2] / ".config" / "dotfiles" / "ui-sizes.sh"
+
+
+def _ui_sizes_candidates(helper):
+    yield Path.home() / ".config" / "dotfiles" / "ui-sizes.env"
+    yield helper.with_name("ui-sizes.env")
+
+
+def _resolved_ui_values(names):
+    helper = next((path for path in _ui_helper_candidates() if path.is_file()), None)
+    if helper is None:
+        return {}
+
+    sizes_file = next((path for path in _ui_sizes_candidates(helper) if path.is_file()), None)
+    if sizes_file is None:
+        return {}
+
+    try:
+        output = subprocess.check_output(
+            [
+                "bash",
+                "-c",
+                (
+                    'DOTFILES_UI_SIZES_FILE="$1"; '
+                    'source "$2"; '
+                    "shift 2; "
+                    'for name in "$@"; do printf "%s=%s\\0" "$name" "${!name}"; done'
+                ),
+                "dotfiles-ui",
+                str(sizes_file),
+                str(helper),
+                *names,
+            ],
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        return {}
+
+    values = {}
+    for item in output.split(b"\0"):
+        if not item or b"=" not in item:
+            continue
+        name, value = item.split(b"=", 1)
+        try:
+            values[name.decode("ascii")] = value.decode("utf-8")
+        except UnicodeDecodeError:
+            pass
+    return values
+
+
+_UI_NAMES = (
+    "DOTFILES_UI_RESOLVED_DRAWING_HANDLE_SIZE",
+    "DOTFILES_UI_RESOLVED_DRAWING_HANDLE_MIN_SIZE",
+    "DOTFILES_UI_RESOLVED_DRAWING_HANDLE_HIT_SIZE",
+    "DOTFILES_UI_RESOLVED_DRAWING_HANDLE_HIT_MIN_SIZE",
+    "DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_SIZE",
+    "DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_HIT_SIZE",
+    "DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_HIT_MIN_SIZE",
+    "DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_OFFSET",
+    "DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_MARGIN",
+    "DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_MIN_RADIUS",
+    "DOTFILES_UI_RESOLVED_DRAWING_OVERLAY_BASE_LINE_WIDTH",
+    "DOTFILES_UI_RESOLVED_DRAWING_OVERLAY_MIN_LINE_WIDTH",
+    "DOTFILES_UI_RESOLVED_DRAWING_TOOLS_PANEL_WIDTH",
+    "DOTFILES_UI_RESOLVED_DRAWING_CUSTOM_DIALOG_SPACING",
+    "DOTFILES_UI_RESOLVED_DRAWING_CUSTOM_DIALOG_MARGIN",
+)
+_UI_VALUES = _resolved_ui_values(_UI_NAMES)
+
+
+def _ui_number(name, default, cast):
+    try:
+        return cast(_UI_VALUES.get(name, ""))
+    except (TypeError, ValueError):
+        return default
+
+
+def _ui_int(name, default):
+    return _ui_number(name, default, int)
+
+
+def _ui_float(name, default):
+    return _ui_number(name, default, float)
+
+
+HANDLE_SIZE = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_HANDLE_SIZE", 9.0)
+HANDLE_MIN_SIZE = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_HANDLE_MIN_SIZE", 4.0)
+HANDLE_HIT_SIZE = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_HANDLE_HIT_SIZE", 12.0)
+HANDLE_HIT_MIN_SIZE = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_HANDLE_HIT_MIN_SIZE", 5.0)
+ROTATE_HANDLE_SIZE = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_SIZE", 13.0)
+ROTATE_HANDLE_HIT_SIZE = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_HIT_SIZE", 18.0)
+ROTATE_HANDLE_HIT_MIN_SIZE = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_HIT_MIN_SIZE", 6.0)
+ROTATE_HANDLE_OFFSET = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_OFFSET", 28.0)
+ROTATE_HANDLE_MARGIN = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_MARGIN", 4.0)
+ROTATE_HANDLE_MIN_RADIUS = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_ROTATE_HANDLE_MIN_RADIUS", 5.5)
 ROTATE_SNAP_DEGREES = 15
 ROTATE_FILL_RGBA = (1.0, 1.0, 1.0, 1.0)
 ROTATE_MENU_ANGLES = tuple(range(45, 361, 45))
 SELECTION_TOOL_IDS = {"rect_select", "free_select", "color_select"}
+OVERLAY_BASE_LINE_WIDTH = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_OVERLAY_BASE_LINE_WIDTH", 1.0)
+OVERLAY_MIN_LINE_WIDTH = _ui_float("DOTFILES_UI_RESOLVED_DRAWING_OVERLAY_MIN_LINE_WIDTH", 0.5)
 TOOLS_COLUMNS = 2
-TOOLS_PANEL_WIDTH = 74
+TOOLS_PANEL_WIDTH = _ui_int("DOTFILES_UI_RESOLVED_DRAWING_TOOLS_PANEL_WIDTH", 74)
+CUSTOM_DIALOG_SPACING = _ui_int("DOTFILES_UI_RESOLVED_DRAWING_CUSTOM_DIALOG_SPACING", 12)
+CUSTOM_DIALOG_MARGIN = _ui_int("DOTFILES_UI_RESOLVED_DRAWING_CUSTOM_DIALOG_MARGIN", 18)
 
 
 def _handle_size(image):
-    return max(4.0, HANDLE_SIZE / image.zoom_level)
+    return max(HANDLE_MIN_SIZE, HANDLE_SIZE / image.zoom_level)
 
 
 def _hit_tolerance(image):
-    return max(5.0, HANDLE_HIT_SIZE / image.zoom_level)
+    return max(HANDLE_HIT_MIN_SIZE, HANDLE_HIT_SIZE / image.zoom_level)
+
+
+def _overlay_line_width(image):
+    return max(OVERLAY_BASE_LINE_WIDTH / image.zoom_level, OVERLAY_MIN_LINE_WIDTH)
+
+
+def _rotate_handle_radius(image):
+    return max(ROTATE_HANDLE_MIN_RADIUS, (ROTATE_HANDLE_SIZE / image.zoom_level) / 2)
 
 
 def _handle_centers(image, width=None, height=None):
@@ -223,7 +330,7 @@ def _rotate_handle_center(image, bounds=None):
         bounds = _selection_bounds(image)
     x, y, width, height = bounds
     gap = ROTATE_HANDLE_OFFSET / image.zoom_level
-    margin = (ROTATE_HANDLE_SIZE + 4) / image.zoom_level
+    margin = (ROTATE_HANDLE_SIZE + ROTATE_HANDLE_MARGIN) / image.zoom_level
     handle_y = y - gap
     if handle_y < image.scroll_y + margin:
         handle_y = y + height + gap
@@ -235,7 +342,7 @@ def _rotate_handle_at_event(image, event):
         return False
     event_x, event_y = image.get_event_coords(event, as_integers=False)
     center_x, center_y = _rotate_handle_center(image)
-    tolerance = max(6.0, ROTATE_HANDLE_HIT_SIZE / image.zoom_level)
+    tolerance = max(ROTATE_HANDLE_HIT_MIN_SIZE, ROTATE_HANDLE_HIT_SIZE / image.zoom_level)
     return math.hypot(event_x - center_x, event_y - center_y) <= tolerance
 
 
@@ -659,14 +766,14 @@ def _draw_handle(context, image, center_x, center_y):
     context.rectangle(x, y, size, size)
     context.set_source_rgb(0.96, 0.98, 1.0)
     context.fill_preserve()
-    context.set_line_width(max(1.0 / image.zoom_level, 0.5))
+    context.set_line_width(_overlay_line_width(image))
     context.set_source_rgb(0.42, 0.65, 0.85)
     context.stroke()
 
 
 def _draw_rotation_chrome(image, context, bounds, draw_bounds):
     x, y, width, height = bounds
-    line_width = max(1.0 / image.zoom_level, 0.5)
+    line_width = _overlay_line_width(image)
     center_x = x + (width / 2)
     handle_x, handle_y = _rotate_handle_center(image, bounds)
     handle_is_below = handle_y > y + (height / 2)
@@ -677,7 +784,7 @@ def _draw_rotation_chrome(image, context, bounds, draw_bounds):
     stop_y = anchor_y - image.scroll_y
     shx = handle_x - image.scroll_x
     shy = handle_y - image.scroll_y
-    radius = max(5.5, (ROTATE_HANDLE_SIZE / image.zoom_level) / 2)
+    radius = _rotate_handle_radius(image)
 
     context.save()
     context.set_line_width(line_width)
@@ -721,8 +828,8 @@ def _draw_rotation_handle_chrome(image, context, path=None):
         return
 
     anchor_x, anchor_y, handle_x, handle_y = geometry
-    line_width = max(1.0 / image.zoom_level, 0.5)
-    radius = max(5.5, (ROTATE_HANDLE_SIZE / image.zoom_level) / 2)
+    line_width = _overlay_line_width(image)
+    radius = _rotate_handle_radius(image)
     sax = anchor_x - image.scroll_x
     say = anchor_y - image.scroll_y
     shx = handle_x - image.scroll_x
@@ -777,7 +884,7 @@ def _draw_selection_rotation_overlay(image, context):
             False,
             True,
         )
-        _draw_path_overlay(context, path, max(1.0 / image.zoom_level, 0.5))
+        _draw_path_overlay(context, path, _overlay_line_width(image))
         handle_path = _transformed_selection_path(
             image,
             image._paint_rotation_angle,
@@ -805,7 +912,7 @@ def _draw_resize_overlay(image, context):
 
     x = -image.scroll_x
     y = -image.scroll_y
-    line_width = max(1.0 / image.zoom_level, 0.5)
+    line_width = _overlay_line_width(image)
 
     context.save()
     if is_resizing:
@@ -984,11 +1091,11 @@ def _show_custom_selection_rotation_dialog(window):
 
     row = Gtk.Box(
         orientation=Gtk.Orientation.HORIZONTAL,
-        spacing=12,
-        margin_start=18,
-        margin_end=18,
-        margin_top=18,
-        margin_bottom=18,
+        spacing=CUSTOM_DIALOG_SPACING,
+        margin_start=CUSTOM_DIALOG_MARGIN,
+        margin_end=CUSTOM_DIALOG_MARGIN,
+        margin_top=CUSTOM_DIALOG_MARGIN,
+        margin_bottom=CUSTOM_DIALOG_MARGIN,
     )
     label = Gtk.Label(label=_("Angle (°)"))
     spin = Gtk.SpinButton.new_with_range(-360, 360, 1)

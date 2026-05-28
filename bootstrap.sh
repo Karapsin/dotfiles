@@ -10,16 +10,19 @@ Choose exactly one mode:
   --root         Run bootstrap-root.sh.
   --user         Run bootstrap-user.sh.
   --user-light   Run bootstrap-user-light.sh.
+  --guest        Run sync-guest-user.sh.
 
 Examples:
   sudo ./bootstrap.sh --root --enable-networkmanager --with-lightdm --enable-multilib --vulkan-provider auto
   ./bootstrap.sh --user --noconfirm
   ./bootstrap.sh --user-light --enable-linger --enable-login-wallpaper
+  sudo ./bootstrap.sh --guest --enable-linger --enable-login-wallpaper
 
 Direct script entrypoints remain supported:
   sudo ./bootstrap-root.sh --enable-networkmanager --with-lightdm --enable-multilib --vulkan-provider auto
   ./bootstrap-user.sh --noconfirm
   ./bootstrap-user-light.sh --enable-linger
+  sudo ./sync-guest-user.sh --enable-linger
 EOF
 }
 
@@ -46,9 +49,13 @@ Choose bootstrap mode:
      Use as a normal user on a machine that is already system-configured.
      Stows dotfiles and user services without installing packages.
 
+  4) Guest user sync
+     Use with sudo to sync this checkout into the local guest account through
+     the light user bootstrap.
+
 EOF
 
-  printf 'Enter 1, 2, or 3: '
+  printf 'Enter 1, 2, 3, or 4: '
   if ! read -r choice; then
     echo "No mode selected." >&2
     exit 1
@@ -64,9 +71,12 @@ EOF
     3|light|user-light|--user-light)
       target_script="$SCRIPT_DIR/bootstrap-user-light.sh"
       ;;
+    4|guest|--guest)
+      target_script="$SCRIPT_DIR/sync-guest-user.sh"
+      ;;
     *)
       echo "Unknown selection: $choice" >&2
-      echo "Choose 1, 2, or 3." >&2
+      echo "Choose 1, 2, 3, or 4." >&2
       exit 1
       ;;
   esac
@@ -96,6 +106,10 @@ for arg in "$@"; do
       mode_count=$((mode_count + 1))
       target_script="$SCRIPT_DIR/bootstrap-user-light.sh"
       ;;
+    --guest)
+      mode_count=$((mode_count + 1))
+      target_script="$SCRIPT_DIR/sync-guest-user.sh"
+      ;;
     *)
       target_args+=("$arg")
       ;;
@@ -103,7 +117,7 @@ for arg in "$@"; do
 done
 
 if [[ $mode_count -eq 0 ]]; then
-  echo "Missing mode flag: choose --root, --user, or --user-light." >&2
+  echo "Missing mode flag: choose --root, --user, --user-light, or --guest." >&2
   usage >&2
   exit 1
 fi

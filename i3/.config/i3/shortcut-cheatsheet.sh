@@ -3,6 +3,12 @@ set -euo pipefail
 
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 config_text=""
+ui_helper="${DOTFILES_UI_HELPER:-$HOME/.config/dotfiles/ui-sizes.sh}"
+if [[ ! -r "$ui_helper" ]]; then
+    ui_helper="$script_dir/../../../home/.config/dotfiles/ui-sizes.sh"
+fi
+# shellcheck disable=SC1090
+source "$ui_helper"
 
 if command -v i3-msg >/dev/null 2>&1; then
     config_text="$(i3-msg -t get_config 2>/dev/null || true)"
@@ -34,7 +40,9 @@ if ! command -v rofi >/dev/null 2>&1; then
     exit 1
 fi
 
-SHORTCUT_COLUMN_WIDTH=43
+SHORTCUT_COLUMN_WIDTH="$(dotfiles_ui_resolved_positive_int DOTFILES_UI_SHORTCUT_CHEATSHEET_COLUMN_WIDTH)"
+SHORTCUT_CHEATSHEET_WIDTH="$(dotfiles_ui_resolved_positive_int DOTFILES_UI_SHORTCUT_CHEATSHEET_WIDTH)"
+SHORTCUT_CHEATSHEET_LINES="$(dotfiles_ui_resolved_positive_int DOTFILES_UI_SHORTCUT_CHEATSHEET_LINES)"
 
 has_binding() {
     local pattern=$1
@@ -139,6 +147,10 @@ generate_rows() {
         '$mod+n' 'Open Mousepad (like Windows Notepad)'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+s[[:space:]].*flameshot[[:space:]]+gui' \
         '$mod+Shift+s' 'Start Flameshot screenshot selection (like Snipping Tool)'
+    add_if '^[[:space:]]*bindsym[[:space:]]+Print[[:space:]].*flameshot[[:space:]]+full[[:space:]]+-c' \
+        'Print Screen' 'Copy a full desktop screenshot to the clipboard with Flameshot'
+    add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+o[[:space:]].*obs' \
+        '$mod+Shift+o' 'Launch OBS Studio for screen recording'
     add_if '^[[:space:]]*bindsym[[:space:]]+Ctrl\+Shift\+l[[:space:]].*betterlockscreen[[:space:]]+-l[[:space:]]+dim' \
         'Ctrl+Shift+l' 'Lock the screen with Betterlockscreen'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+c[[:space:]].*google-chrome-dotfiles' \
@@ -149,10 +161,10 @@ generate_rows() {
         '$mod+t' 'Launch Telegram'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+v[[:space:]].*vpn-control-toggle\.sh' \
         '$mod+Shift+v' 'Toggle VPN control'
-    add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Mod1\+v[[:space:]].*pavucontrol[[:space:]]+--tab=1' \
-        '$mod+Alt+v' 'Open PulseAudio volume control (like Volume Mixer)'
+    add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Mod1\+v[[:space:]].*launch-volume-control\.sh' \
+        '$mod+Alt+v' 'Open PulseAudio volume control above Polybar (like Volume Mixer)'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Mod1\+b[[:space:]].*blueman-launch\.sh[[:space:]]+--manager' \
-        '$mod+Alt+b' 'Open Blueman manager (like Bluetooth settings)'
+        '$mod+Alt+b' 'Open Blueman manager above Polybar (like Bluetooth settings)'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+t[[:space:]].*element-desktop' \
         '$mod+Shift+t' 'Launch Element'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+p[[:space:]].*positron' \
@@ -166,7 +178,7 @@ generate_rows() {
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+c[[:space:]].*calendar\.sh[[:space:]]+--popup' \
         '$mod+Shift+c' 'Open the Polybar calendar popup'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+p[[:space:]].*powermenu\.sh' \
-        '$mod+Shift+p' 'Open the Polybar power menu'
+        '$mod+Shift+p' 'Open the Polybar power menu above Polybar'
 
     add_section "i3 Action Shortcuts"
     add_if_all '$mod+1 through $mod+0' 'Switch to workspace 1 through 10' \
@@ -206,8 +218,10 @@ generate_rows() {
     add_if_all '$mod+s / $mod+w / $mod+e' 'Use stacking, tabbed, or split layout' \
         '^[[:space:]]*bindsym[[:space:]]+\$mod\+s[[:space:]]+layout[[:space:]]+stacking' \
         '^[[:space:]]*bindsym[[:space:]]+\$mod\+e[[:space:]]+layout[[:space:]]+toggle[[:space:]]+split'
-    add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+space[[:space:]]+floating[[:space:]]+toggle' \
-        '$mod+Shift+Space' 'Toggle floating mode'
+    add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+f[[:space:]]+floating[[:space:]]+toggle' \
+        '$mod+Shift+f' 'Toggle floating mode for the focused window'
+    add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Mod1\+a[[:space:]].*session-start\.sh[[:space:]]+--toggle-auto-split' \
+        '$mod+Alt+a' 'Toggle automatic tiling'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+a[[:space:]]+focus[[:space:]]+parent' \
         '$mod+a' 'Focus parent container'
 
@@ -215,5 +229,5 @@ generate_rows() {
 }
 
 generate_rows \
-    | rofi -dmenu -i -no-custom -no-sort -markup-rows -p "i3 shortcuts" -theme-str 'window { width: 900px; } listview { lines: 24; }' \
+    | rofi -dmenu -i -no-custom -no-sort -markup-rows -p "i3 shortcuts" -theme-str "window { width: ${SHORTCUT_CHEATSHEET_WIDTH}px; } listview { lines: ${SHORTCUT_CHEATSHEET_LINES}; }" \
     >/dev/null

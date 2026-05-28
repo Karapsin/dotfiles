@@ -23,15 +23,15 @@ calendar,
 
 window {
     border: @border_width_px@px solid #23516F;
-    border-radius: 0.46em;
+    border-radius: @gsimplecal_window_radius_em@em;
 }
 
 calendar {
     -GtkCalendar-horizontal-separation: 0;
     -GtkCalendar-vertical-separation: 0;
-    padding: 0.62em;
+    padding: @gsimplecal_padding_em@em;
     border: @border_width_px@px solid #23516F;
-    border-radius: 0.46em;
+    border-radius: @gsimplecal_window_radius_em@em;
 }
 
 calendar header,
@@ -41,9 +41,9 @@ calendar grid {
 }
 
 calendar.button {
-    padding: 0.15em 0.46em;
+    padding: @gsimplecal_button_padding_y_em@em @gsimplecal_button_padding_x_em@em;
     border: @border_width_px@px solid #263645;
-    border-radius: 0.31em;
+    border-radius: @gsimplecal_button_radius_em@em;
     background-color: #172331;
     color: @theme_fg_color;
 }
@@ -85,18 +85,18 @@ calendar:backdrop:selected {
     background-image: none;
     box-shadow: none;
     color: @theme_selected_fg_color;
-    border-radius: 0.46em;
+    border-radius: @gsimplecal_window_radius_em@em;
 }
 
 .polybar-calendar {
     background-color: @theme_bg_color;
     border: @border_width_px@px solid #23516F;
-    border-radius: 0.46em;
-    padding: 0.52em;
+    border-radius: @gsimplecal_window_radius_em@em;
+    padding: @gsimplecal_popup_padding_em@em;
 }
 
 .polybar-calendar-header {
-    margin-bottom: 0.42em;
+    margin-bottom: @gsimplecal_header_margin_em@em;
 }
 
 .polybar-calendar-title {
@@ -108,11 +108,11 @@ button.polybar-calendar-nav {
     background-color: @theme_base_color;
     background-image: none;
     border: @border_width_px@px solid #23516F;
-    border-radius: 0.32em;
+    border-radius: @gsimplecal_nav_radius_em@em;
     box-shadow: none;
     color: @theme_fg_color;
-    min-height: 1.45em;
-    min-width: 1.45em;
+    min-height: @gsimplecal_nav_min_size_em@em;
+    min-width: @gsimplecal_nav_min_size_em@em;
     padding: 0;
 }
 
@@ -123,16 +123,16 @@ button.polybar-calendar-nav:hover {
 
 .polybar-calendar-weekday {
     color: #9CCFD8;
-    min-height: 1.8em;
-    min-width: 2.45em;
+    min-height: @gsimplecal_weekday_min_height_em@em;
+    min-width: @gsimplecal_weekday_min_width_em@em;
 }
 
 .polybar-calendar-day {
     background-color: transparent;
     border: @border_width_px@px solid transparent;
-    border-radius: 0.42em;
-    min-height: 1.8em;
-    min-width: 2.45em;
+    border-radius: @gsimplecal_day_radius_em@em;
+    min-height: @gsimplecal_weekday_min_height_em@em;
+    min-width: @gsimplecal_weekday_min_width_em@em;
 }
 
 .polybar-calendar-day label {

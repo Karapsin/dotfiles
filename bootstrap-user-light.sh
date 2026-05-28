@@ -102,14 +102,19 @@ cleanup_legacy_wallpaper_links
 stow --no-folding -d "$DOTFILES_DIR" -t "$HOME" -R "${STOW_PACKAGES[@]}"
 prepare_wallpaper_state
 
-echo "[4/8] Generating local personal files..."
+echo "[4/8] Generating local personal and UI files..."
 generate_dotfiles_personal_files "$BACKUP_DIR"
 
 EXPECTED_EXECUTABLES=(
+  "$HOME/.config/i3/auto-split.sh"
   "$HOME/.config/i3/blueman-launch.sh"
+  "$HOME/.config/i3/blueman-placement-watch.sh"
+  "$HOME/.config/i3/bluetooth-tray-fallback.sh"
+  "$HOME/.config/i3/bluetooth-tray-left-click.sh"
   "$HOME/.config/i3/close-popups-on-outside-click.sh"
   "$HOME/.config/i3/focus-visual.py"
   "$HOME/.config/i3/launch-terminal.sh"
+  "$HOME/.config/i3/launch-volume-control.sh"
   "$HOME/.config/i3/nemo-switch-pane.py"
   "$HOME/.config/i3/nemo-tab-pane-switch.sh"
   "$HOME/.config/i3/restart_monitors.sh"
@@ -117,6 +122,7 @@ EXPECTED_EXECUTABLES=(
   "$HOME/.config/i3/shortcut-cheatsheet.sh"
   "$HOME/.config/i3/volume-tray-left-click.sh"
   "$HOME/.config/i3/vpn-control-toggle.sh"
+  "$HOME/.config/dotfiles/update-ui.sh"
   "$HOME/.config/polybar/calendar.sh"
   "$HOME/.config/polybar/launch.sh"
   "$HOME/.local/bin/i3-terminal"

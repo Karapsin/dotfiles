@@ -1,0 +1,59 @@
+[global]
+    monitor = 0
+    follow = keyboard
+    width = (@DOTFILES_UI_RESOLVED_DUNST_WIDTH_MIN@, @DOTFILES_UI_RESOLVED_DUNST_WIDTH_MAX@)
+    height = (@DOTFILES_UI_RESOLVED_DUNST_HEIGHT_MIN@, @DOTFILES_UI_RESOLVED_DUNST_HEIGHT_MAX@)
+    origin = top-right
+    offset = (@DOTFILES_UI_RESOLVED_DUNST_OFFSET_X@, @DOTFILES_UI_RESOLVED_DUNST_OFFSET_Y@)
+    notification_limit = @DOTFILES_UI_RESOLVED_DUNST_NOTIFICATION_LIMIT@
+
+    font = @DOTFILES_UI_RESOLVED_DUNST_FONT@
+    line_height = @DOTFILES_UI_RESOLVED_DUNST_LINE_HEIGHT@
+    markup = full
+    format = "<b>%s</b>\n%b"
+    alignment = left
+    vertical_alignment = center
+    ellipsize = middle
+    show_age_threshold = @DOTFILES_UI_RESOLVED_DUNST_SHOW_AGE_THRESHOLD@
+    ignore_newline = no
+
+    padding = @DOTFILES_UI_RESOLVED_DUNST_PADDING@
+    horizontal_padding = @DOTFILES_UI_RESOLVED_DUNST_HORIZONTAL_PADDING@
+    text_icon_padding = @DOTFILES_UI_RESOLVED_DUNST_TEXT_ICON_PADDING@
+    frame_width = @DOTFILES_UI_RESOLVED_DUNST_FRAME_WIDTH@
+    frame_color = "#23516F"
+    separator_height = @DOTFILES_UI_RESOLVED_DUNST_SEPARATOR_HEIGHT@
+    separator_color = frame
+    corner_radius = @DOTFILES_UI_RESOLVED_DUNST_CORNER_RADIUS@
+
+    progress_bar = true
+    progress_bar_height = @DOTFILES_UI_RESOLVED_DUNST_PROGRESS_BAR_HEIGHT@
+    progress_bar_frame_width = @DOTFILES_UI_RESOLVED_DUNST_PROGRESS_BAR_FRAME_WIDTH@
+    progress_bar_min_width = @DOTFILES_UI_RESOLVED_DUNST_PROGRESS_BAR_MIN_WIDTH@
+    progress_bar_max_width = @DOTFILES_UI_RESOLVED_DUNST_PROGRESS_BAR_MAX_WIDTH@
+
+    icon_position = left
+    min_icon_size = @DOTFILES_UI_RESOLVED_DUNST_MIN_ICON_SIZE@
+    max_icon_size = @DOTFILES_UI_RESOLVED_DUNST_MAX_ICON_SIZE@
+
+    sort = yes
+    stack_duplicates = true
+    hide_duplicate_count = false
+    show_indicators = false
+
+[urgency_low]
+    background = "#101820"
+    foreground = "#9AA7B2"
+    timeout = 4
+
+[urgency_normal]
+    background = "#121C26"
+    foreground = "#E5EAF0"
+    frame_color = "#23516F"
+    timeout = 6
+
+[urgency_critical]
+    background = "#2A1518"
+    foreground = "#FFFFFF"
+    frame_color = "#A54242"
+    timeout = 0

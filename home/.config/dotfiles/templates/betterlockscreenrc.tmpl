@@ -1,0 +1,48 @@
+# betterlockscreen sources this file as Bash.
+# Show the current XKB layout on the lock screen.
+lockargs+=(--keylayout 0)
+
+# Keep the lock screen aligned with the dark blue desktop palette.
+font="Noto Sans"
+locktext="Locked"
+veriftext="Checking..."
+wrongtext="Try again"
+time_format="%H:%M"
+lock_timeout=60
+
+lockargs+=(
+  --ind-pos "x+@DOTFILES_UI_RESOLVED_LOCKSCREEN_IND_OFFSET_X@:y+h-@DOTFILES_UI_RESOLVED_LOCKSCREEN_IND_OFFSET_BOTTOM@"
+  --radius "@DOTFILES_UI_RESOLVED_LOCKSCREEN_RING_RADIUS@"
+  --ring-width "@DOTFILES_UI_RESOLVED_LOCKSCREEN_RING_WIDTH@"
+  --time-pos "ix-@DOTFILES_UI_RESOLVED_LOCKSCREEN_TIME_OFFSET_LEFT@:iy-@DOTFILES_UI_RESOLVED_LOCKSCREEN_TIME_OFFSET_UP@"
+  --time-size "@DOTFILES_UI_RESOLVED_LOCKSCREEN_FONT_LG@"
+  --greeter-pos "ix-@DOTFILES_UI_RESOLVED_LOCKSCREEN_GREETER_OFFSET_LEFT@:iy+@DOTFILES_UI_RESOLVED_LOCKSCREEN_GREETER_OFFSET_DOWN@"
+  --greeter-size "@DOTFILES_UI_RESOLVED_LOCKSCREEN_FONT_MD@"
+  --layout-pos "ix-@DOTFILES_UI_RESOLVED_LOCKSCREEN_LAYOUT_OFFSET_LEFT@:iy+@DOTFILES_UI_RESOLVED_LOCKSCREEN_LAYOUT_OFFSET_DOWN@"
+  --layout-size "@DOTFILES_UI_RESOLVED_LOCKSCREEN_FONT_SM@"
+  --verif-pos "ix+@DOTFILES_UI_RESOLVED_LOCKSCREEN_VERIF_OFFSET_RIGHT@:iy-@DOTFILES_UI_RESOLVED_LOCKSCREEN_VERIF_OFFSET_UP@"
+  --verif-size "@DOTFILES_UI_RESOLVED_LOCKSCREEN_FONT_SM@"
+  --wrong-pos "ix+@DOTFILES_UI_RESOLVED_LOCKSCREEN_WRONG_OFFSET_RIGHT@:iy-@DOTFILES_UI_RESOLVED_LOCKSCREEN_WRONG_OFFSET_UP@"
+  --wrong-size "@DOTFILES_UI_RESOLVED_LOCKSCREEN_FONT_SM@"
+  --modif-pos "ix+@DOTFILES_UI_RESOLVED_LOCKSCREEN_MODIF_OFFSET_RIGHT@:iy+@DOTFILES_UI_RESOLVED_LOCKSCREEN_MODIF_OFFSET_DOWN@"
+  --modif-size "@DOTFILES_UI_RESOLVED_LOCKSCREEN_FONT_SM@"
+)
+
+bgcolor=0c1116ff
+loginbox=0c1116b3
+loginshadow=00000066
+separatorcolor=00000000
+layoutcolor=65a6d9ff
+greetercolor=d7dde4ff
+timecolor=d7dde4ff
+ringcolor=3a607dff
+keyhlcolor=65a6d9ff
+bshlcolor=d26a6aff
+verifcolor=65a6d9ff
+wrongcolor=d26a6aff
+modifcolor=65a6d9ff
+insidecolor=00000000
+insidevercolor=00000000
+insidewrongcolor=d26a6a66
+ringvercolor=65a6d9ff
+ringwrongcolor=d26a6aff

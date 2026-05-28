@@ -15,8 +15,10 @@ set $ws7 "7"
 set $ws8 "8"
 set $ws9 "9"
 set $ws10 "10"
+set_from_resource $i3_font_size i3wm.font_size 8
+set_from_resource $resize_step i3wm.resize_step 10
 
-font pango:monospace 8
+font pango:monospace $i3_font_size
 floating_modifier $mod
 tiling_drag modifier titlebar
 hide_edge_borders smart
@@ -24,8 +26,9 @@ hide_edge_borders smart
 # Autostart
 exec_always --no-startup-id xrandr --output DP-0 --mode 2560x1440 --rate 143.97
 exec --no-startup-id $i3dir/session-start.sh
-exec --no-startup-id $i3dir/close-popups-on-outside-click.sh
-exec --no-startup-id $i3dir/volume-tray-left-click.sh
+exec_always --no-startup-id $i3dir/close-popups-on-outside-click.sh
+exec_always --no-startup-id $i3dir/volume-tray-left-click.sh
+exec_always --no-startup-id $i3dir/session-start.sh --auto-split-daemon
 exec --no-startup-id $HOME/.config/polybar/launch.sh restart
 exec_always --no-startup-id $HOME/.local/bin/load-xkb-shortcuts
 
@@ -49,13 +52,14 @@ bindsym $mod+Shift+e exec --no-startup-id nemo --no-desktop
 bindsym $mod+n exec --no-startup-id mousepad
 bindsym $mod+Shift+s exec --no-startup-id flameshot gui
 bindsym Print exec --no-startup-id flameshot full -c
+bindsym $mod+Shift+o exec --no-startup-id obs
 bindsym Ctrl+Shift+l exec --no-startup-id betterlockscreen -l dim
 bindsym $mod+Shift+p exec --no-startup-id $HOME/.config/polybar/powermenu.sh
 bindsym $mod+c exec --no-startup-id $HOME/.local/bin/google-chrome-dotfiles
 bindsym $mod+g exec --no-startup-id steam
 bindsym $mod+t exec --no-startup-id /usr/bin/env QT_QPA_PLATFORMTHEME=xdgdesktopportal Telegram
 bindsym $mod+Shift+v exec --no-startup-id $i3dir/vpn-control-toggle.sh
-bindsym $mod+Mod1+v exec --no-startup-id pavucontrol --tab=1
+bindsym $mod+Mod1+v exec --no-startup-id $i3dir/launch-volume-control.sh
 bindsym $mod+Mod1+b exec --no-startup-id $i3dir/blueman-launch.sh --manager
 bindsym $mod+Shift+t exec --no-startup-id element-desktop
 bindsym $mod+p exec --no-startup-id $HOME/.local/bin/positron
@@ -90,6 +94,7 @@ bindsym $mod+s layout stacking
 bindsym $mod+w layout tabbed
 bindsym $mod+e layout toggle split
 bindsym $mod+Shift+f floating toggle
+bindsym $mod+Mod1+a exec --no-startup-id $i3dir/session-start.sh --toggle-auto-split
 # $mod+space is reserved for keyboard layout switching via XKB.
 bindsym $mod+a focus parent
 
@@ -118,15 +123,15 @@ bindsym $mod+Shift+0 move container to workspace number $ws10
 
 # Resize mode
 mode "resize" {
-        bindsym j resize shrink width 10 px or 10 ppt
-        bindsym k resize grow height 10 px or 10 ppt
-        bindsym l resize shrink height 10 px or 10 ppt
-        bindsym semicolon resize grow width 10 px or 10 ppt
+        bindsym j resize shrink width $resize_step px or $resize_step ppt
+        bindsym k resize grow height $resize_step px or $resize_step ppt
+        bindsym l resize shrink height $resize_step px or $resize_step ppt
+        bindsym semicolon resize grow width $resize_step px or $resize_step ppt
 
-        bindsym Left resize shrink width 10 px or 10 ppt
-        bindsym Down resize grow height 10 px or 10 ppt
-        bindsym Up resize shrink height 10 px or 10 ppt
-        bindsym Right resize grow width 10 px or 10 ppt
+        bindsym Left resize shrink width $resize_step px or $resize_step ppt
+        bindsym Down resize grow height $resize_step px or $resize_step ppt
+        bindsym Up resize shrink height $resize_step px or $resize_step ppt
+        bindsym Right resize grow width $resize_step px or $resize_step ppt
 
         bindsym Return mode "default"
         bindsym Escape mode "default"
@@ -136,8 +141,8 @@ bindsym $mod+r mode "resize"
 
 # Window rules
 for_window [class="Gsimplecal"] floating enable, border none, move scratchpad
-for_window [class="^pavucontrol$"] floating enable, resize set 680 520, move position mouse, move up 3 ppt
-for_window [class="^Blueman-manager$"] floating enable, resize set 560 480, move position mouse, move up 3 ppt
+for_window [class="^pavucontrol$"] floating enable, move scratchpad
+for_window [class="^Blueman-manager$"] floating enable, move scratchpad
 for_window [instance="^RAIL$"] move to output $rail_output, floating enable, sticky disable, focus, move position center
 for_window [class="^RAIL(:.*)?$"] move to output $rail_output, floating enable, sticky disable, focus, move position center
 

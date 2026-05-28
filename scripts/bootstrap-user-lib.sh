@@ -189,6 +189,14 @@ configure_file_dialogs() {
   local mime_file="$HOME/.config/mimeapps.list"
   local gtk_theme="adw-gtk3-dark"
   local skip_services="${SKIP_SERVICES:-0}"
+  if declare -F load_dotfiles_ui_sizes_for_generation >/dev/null 2>&1; then
+    load_dotfiles_ui_sizes_for_generation
+  fi
+
+  local nemo_default_zoom_level="${DOTFILES_UI_RESOLVED_NEMO_DEFAULT_ZOOM_LEVEL:?Missing DOTFILES_UI_RESOLVED_NEMO_DEFAULT_ZOOM_LEVEL}"
+  local mousepad_tab_width="${DOTFILES_UI_RESOLVED_MOUSEPAD_TAB_WIDTH:?Missing DOTFILES_UI_RESOLVED_MOUSEPAD_TAB_WIDTH}"
+  local mousepad_window_width="${DOTFILES_UI_RESOLVED_MOUSEPAD_WINDOW_WIDTH:?Missing DOTFILES_UI_RESOLVED_MOUSEPAD_WINDOW_WIDTH}"
+  local mousepad_window_height="${DOTFILES_UI_RESOLVED_MOUSEPAD_WINDOW_HEIGHT:?Missing DOTFILES_UI_RESOLVED_MOUSEPAD_WINDOW_HEIGHT}"
 
   if command -v xdg-mime >/dev/null 2>&1; then
     if [[ ! -f "$mime_file" ]] || ! grep -Eq '^[[:space:]]*inode/directory=nemo\.desktop([;[:space:]]|$)' "$mime_file"; then
@@ -219,7 +227,7 @@ configure_file_dialogs() {
     gsettings set org.nemo.window-state start-with-sidebar false >/dev/null 2>&1 || true
     gsettings set org.nemo.list-view default-visible-columns "['name', 'size', 'type', 'date_modified']" >/dev/null 2>&1 || true
     gsettings set org.nemo.list-view default-column-order "['name', 'size', 'type', 'date_modified']" >/dev/null 2>&1 || true
-    gsettings set org.nemo.list-view default-zoom-level smaller >/dev/null 2>&1 || true
+    gsettings set org.nemo.list-view default-zoom-level "$nemo_default_zoom_level" >/dev/null 2>&1 || true
 
     if gsettings writable com.github.maoschanz.drawing deco-type >/dev/null 2>&1; then
       gsettings set com.github.maoschanz.drawing dark-theme-variant true >/dev/null 2>&1 || true
@@ -232,13 +240,13 @@ configure_file_dialogs() {
       gsettings set org.xfce.mousepad.preferences.view color-scheme dotfiles-dark-blue >/dev/null 2>&1 || true
       gsettings set org.xfce.mousepad.preferences.view highlight-current-line true >/dev/null 2>&1 || true
       gsettings set org.xfce.mousepad.preferences.view word-wrap true >/dev/null 2>&1 || true
-      gsettings set org.xfce.mousepad.preferences.view tab-width 4 >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.preferences.view tab-width "$mousepad_tab_width" >/dev/null 2>&1 || true
       gsettings set org.xfce.mousepad.preferences.window menubar-visible true >/dev/null 2>&1 || true
       gsettings set org.xfce.mousepad.preferences.window toolbar-visible false >/dev/null 2>&1 || true
       gsettings set org.xfce.mousepad.preferences.window statusbar-visible true >/dev/null 2>&1 || true
       gsettings set org.xfce.mousepad.preferences.window client-side-decorations false >/dev/null 2>&1 || true
-      gsettings set org.xfce.mousepad.state.window width 900 >/dev/null 2>&1 || true
-      gsettings set org.xfce.mousepad.state.window height 600 >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.state.window width "$mousepad_window_width" >/dev/null 2>&1 || true
+      gsettings set org.xfce.mousepad.state.window height "$mousepad_window_height" >/dev/null 2>&1 || true
     fi
   fi
 

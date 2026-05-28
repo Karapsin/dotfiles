@@ -268,28 +268,31 @@ if [[ $NO_CONFIRM -eq 1 ]]; then
   PACMAN_INSTALL_ARGS+=(--noconfirm)
 fi
 
-echo "[1/6] Installing official packages..."
+echo "[1/7] Installing official packages..."
 retry_command 5 10 "Installing official packages" pacman "${PACMAN_ARGS[@]}" "${PACMAN_PACKAGES[@]}"
 
-echo "[2/6] Setting the X11 keyboard baseline..."
+echo "[2/7] Setting the X11 keyboard baseline..."
 localectl --no-convert set-x11-keymap us,ru pc105+inet "" "grp:win_space_toggle,terminate:ctrl_alt_bksp"
 
 BOOTSTRAP_USER="${SUDO_USER:-${BOOTSTRAP_USER:-}}"
 if [[ -n "$BOOTSTRAP_USER" ]]; then
-  echo "[3/6] Enabling lingering for $BOOTSTRAP_USER..."
+  echo "[3/7] Enabling lingering for $BOOTSTRAP_USER..."
   loginctl enable-linger "$BOOTSTRAP_USER" || true
 else
-  echo "[3/6] Skipping linger enable: no non-root target user detected."
+  echo "[3/7] Skipping linger enable: no non-root target user detected."
 fi
 
 if [[ $ENABLE_NETWORKMANAGER -eq 1 ]]; then
-  echo "[4/6] Enabling NetworkManager..."
+  echo "[4/7] Enabling NetworkManager..."
   systemctl enable --now NetworkManager.service
 else
-  echo "[4/6] Leaving NetworkManager disabled (pass --enable-networkmanager to enable it)."
+  echo "[4/7] Leaving NetworkManager disabled (pass --enable-networkmanager to enable it)."
 fi
 
-echo "[5/6] Installing Chrome dark-blue theme policy..."
+echo "[5/7] Enabling Bluetooth service..."
+systemctl enable --now bluetooth.service || true
+
+echo "[6/7] Installing Chrome dark-blue theme policy..."
 install -Dm644 \
   "$DOTFILES_DIR/root/etc/opt/chrome/policies/managed/dotfiles-dark-blue-theme.json" \
   /etc/opt/chrome/policies/managed/dotfiles-dark-blue-theme.json
@@ -300,7 +303,7 @@ if [[ $WITH_LIGHTDM -eq 1 ]]; then
     exit 1
   fi
 
-  echo "[6/6] Installing LightDM packages, greeter theme, and wallpaper sync units..."
+  echo "[7/7] Installing LightDM packages, greeter theme, and wallpaper sync units..."
   retry_command 5 10 "Installing LightDM packages" pacman "${PACMAN_INSTALL_ARGS[@]}" "${LIGHTDM_PACKAGES[@]}"
 
   install -d /usr/share/backgrounds
@@ -319,17 +322,12 @@ if [[ $WITH_LIGHTDM -eq 1 ]]; then
     cp -p /etc/lightdm/lightdm-gtk-greeter.conf /etc/lightdm/lightdm-gtk-greeter.conf.bak
   fi
   install -Dm644 \
-    "$DOTFILES_DIR/root/etc/lightdm/lightdm-gtk-greeter.conf" \
-    /etc/lightdm/lightdm-gtk-greeter.conf
-  install -Dm644 \
     "$DOTFILES_DIR/root/etc/lightdm/lightdm.conf.d/50-dotfiles-greeter.conf" \
     /etc/lightdm/lightdm.conf.d/50-dotfiles-greeter.conf
   install -Dm644 \
     "$DOTFILES_DIR/root/usr/share/themes/Dotfiles-DarkBlue/index.theme" \
     /usr/share/themes/Dotfiles-DarkBlue/index.theme
-  install -Dm644 \
-    "$DOTFILES_DIR/root/usr/share/themes/Dotfiles-DarkBlue/gtk-3.0/gtk.css" \
-    /usr/share/themes/Dotfiles-DarkBlue/gtk-3.0/gtk.css
+  bash "$DOTFILES_DIR/scripts/render-root-ui.sh"
   systemctl daemon-reload
   systemctl enable lightdm.service
 
@@ -344,7 +342,7 @@ if [[ $WITH_LIGHTDM -eq 1 ]]; then
     echo "Skipping wallpaper-login-copy timer enable: no non-root target user detected."
   fi
 else
-  echo "[6/6] Skipping LightDM wallpaper integration (pass --with-lightdm to enable it)."
+  echo "[7/7] Skipping LightDM wallpaper integration (pass --with-lightdm to enable it)."
 fi
 
 echo

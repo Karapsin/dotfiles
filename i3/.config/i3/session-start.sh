@@ -2,12 +2,41 @@
 
 user_id=$(id -u)
 i3_dir="${0%/*}"
+script_path=$(readlink -f -- "$0" 2>/dev/null || printf '%s\n' "$0")
+script_source_dir="${script_path%/*}"
+
+resolve_i3_script() {
+  script_name=$1
+
+  if [ -x "$i3_dir/$script_name" ]; then
+    printf '%s\n' "$i3_dir/$script_name"
+  elif [ -x "$script_source_dir/$script_name" ]; then
+    printf '%s\n' "$script_source_dir/$script_name"
+  else
+    printf '%s\n' "$i3_dir/$script_name"
+  fi
+}
+
+case "${1:-}" in
+  --auto-split-daemon)
+    auto_split_script=$(resolve_i3_script auto-split.sh)
+    exec "$auto_split_script" --daemon
+    ;;
+  --toggle-auto-split)
+    auto_split_script=$(resolve_i3_script auto-split.sh)
+    exec "$auto_split_script" --toggle
+    ;;
+esac
 
 case ":$PATH:" in
   *":$HOME/.local/bin:"*) ;;
   *) PATH="$HOME/.local/bin:$PATH" ;;
 esac
 export PATH
+
+if [ -x "$HOME/.config/dotfiles/update-ui.sh" ]; then
+  BACKUP_EXISTING=0 "$HOME/.config/dotfiles/update-ui.sh" --render-only >/dev/null 2>&1 || true
+fi
 
 if command -v xrdb >/dev/null 2>&1 && [ -f "$HOME/.Xresources" ]; then
   xrdb -merge "$HOME/.Xresources" >/dev/null 2>&1 || true
@@ -64,6 +93,7 @@ start_once_name nm-applet nm-applet
 start_once_name pasystray pasystray
 start_once_name dunst dunst
 start_once_pattern '[n]emo-tab-pane-switch.sh' "$i3_dir/nemo-tab-pane-switch.sh"
+start_once_pattern '[b]lueman-placement-watch.sh' "$i3_dir/blueman-placement-watch.sh"
 
 if command -v xset >/dev/null 2>&1 && command -v xss-lock >/dev/null 2>&1 && command -v betterlockscreen >/dev/null 2>&1; then
   xset s 3600 3600 >/dev/null 2>&1 || true
@@ -80,4 +110,8 @@ fi
 
 if [ -x "$i3_dir/blueman-launch.sh" ]; then
   "$i3_dir/blueman-launch.sh" --applet >/dev/null 2>&1
+fi
+
+if [ -x "$i3_dir/bluetooth-tray-fallback.sh" ]; then
+  "$i3_dir/bluetooth-tray-fallback.sh" >/dev/null 2>&1
 fi

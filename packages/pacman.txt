@@ -36,6 +36,7 @@ pamixer
 pavucontrol
 pasystray
 blueman
+bluez-utils
 libnotify
 nemo
 drawing
@@ -72,4 +73,6 @@ ttf-nerd-fonts-symbols
 # Desktop applications referenced by i3 bindings
 telegram-desktop
 element-desktop
+libfdk-aac
+obs-studio
 steam

@@ -49,6 +49,32 @@ For per-user system integration on the configured machine:
 ./bootstrap.sh --user-light --enable-linger --enable-login-wallpaper
 ```
 
+## Guest User Sync
+
+To keep the local `guest` account on the same managed dotfiles, run:
+
+```bash
+sudo ./bootstrap.sh --guest
+```
+
+That wrapper runs the light user bootstrap as `guest`, writes guest-local
+bootstrap values at `/home/guest/.dotfiles-bootstrap.env`, stows the
+packages from [`packages/stow.txt`](packages/stow.txt), and regenerates the
+guest UI files. Stowed files remain symlinked into this checkout, so tracked
+dotfile edits are shared with the guest account after the first sync. Generated
+files and app settings should be refreshed by rerunning the guest sync after
+changing shared sizing or bootstrap-managed defaults.
+
+Optional root integration for the guest account:
+
+```bash
+sudo ./bootstrap.sh --guest --enable-linger --enable-login-wallpaper
+```
+
+For a different local account, pass `--target-user USER`. Guest Git identity
+and GTK bookmark paths can be overridden with `--git-name`, `--git-email`,
+`--downloads-dir`, and `--projects-dir`.
+
 ## Personal Bootstrap Values
 
 Per-user bootstraps read local personal values from repo-root `.env`. That file
@@ -63,9 +89,63 @@ The required values are:
 - `DOTFILES_GTK_PROJECTS_DIR`
 
 After Stow runs, the user bootstraps generate marked local files at
-`~/.gitconfig` and `~/.config/gtk-3.0/bookmarks` from those values. Existing
+`~/.gitconfig` and `~/.config/gtk-3.0/bookmarks` from those values. They also
+render marked UI config files such as GTK CSS, `.Xresources`, Rofi, Dunst,
+Alacritty, Picom, and Betterlockscreen from the shared sizing config described
+below. Existing
 unmanaged files are backed up under `~/.dotfiles-bootstrap-backup/<timestamp>/`,
 or rejected when `--no-backup` is set. `bootstrap-root.sh` does not read `.env`.
+
+## UI Size Configuration
+
+Shared UI sizes live in
+[`home/.config/dotfiles/ui-sizes.env`](home/.config/dotfiles/ui-sizes.env),
+which Stow deploys to `~/.config/dotfiles/ui-sizes.env`. Use that file as the
+single entry point for popup geometry, Polybar sizing, Rofi/Dunst/terminal
+dimensions, i3 font/resize sizing, GTK CSS dimensions, lock screen geometry,
+Drawing wrapper controls, and bootstrap-managed app window defaults.
+
+The values in `ui-sizes.env` are the tuned base values for a `2560x1398`
+workspace. During bootstrap, login/session startup, or `update-ui.sh`, the
+helpers detect the active workspace size from i3, then `xrandr`, then fall back
+to the base size. They resolve concrete app sizes with an area scale:
+
+```text
+scale = sqrt((current_width * current_height) / (base_width * base_height))
+```
+
+`DOTFILES_UI_SCALE_MIN_PERCENT` and `DOTFILES_UI_SCALE_MAX_PERCENT` clamp that
+scale; the defaults are `75` and `180`.
+
+After editing `~/.config/dotfiles/ui-sizes.env`, run:
+
+```bash
+~/.config/dotfiles/update-ui.sh
+```
+
+Run the same command after moving to a different screen size to re-resolve the
+generated values. It regenerates static UI files, merges `.Xresources`, and
+refreshes i3, Polybar, Dunst, and Picom. Already-open GTK, Rofi, and Alacritty
+windows may still need to be relaunched to pick up regenerated files.
+
+The same scale controls these visible areas:
+- i3 font and resize step, shared popup edge and bottom gaps
+- PulseAudio and Blueman popup dimensions and tray icon filter thresholds
+- Polybar bar, tray, fonts, workspace label padding, keyboard indicator density, and title truncation
+- Rofi launcher theme, shortcut cheat sheet, powermenu geometry, and powermenu internal spacing
+- Dunst notification dimensions, icon/progress geometry, padding, frame, radius, and font
+- GTK 3/4 generated CSS, gsimplecal/custom calendar CSS, and Polybar calendar popup sizing
+- Alacritty padding/font, Picom shadow/corner dimensions, Mousepad window/tab defaults, Betterlockscreen/i3lock text and ring geometry, Drawing overlay/tool panel/dialog sizing
+- root-managed LightDM greeter font, panel height, card/control spacing, borders, radii, shadows, and avatar padding
+
+Root-managed LightDM files are rendered by `bootstrap-root.sh --with-lightdm`
+or `sudo ./scripts/render-root-ui.sh`. They are not rewritten by
+`~/.config/dotfiles/update-ui.sh`.
+
+Intentionally fixed values include colors, transparency, animation and timeout
+durations, semantic percentages, zero/no-op dimensions, workspace numbers,
+keyboard shortcuts, date/time formats, image/content geometry, Drawing angle
+values, and the two-column Drawing tool layout.
 
 ## What The Scripts Do
 
@@ -74,6 +154,7 @@ arguments unchanged:
 - `--root` runs `bootstrap-root.sh`
 - `--user` runs `bootstrap-user.sh`
 - `--user-light` runs `bootstrap-user-light.sh`
+- `--guest` runs `sync-guest-user.sh`
 
 The direct scripts remain valid entrypoints for compatibility.
 
@@ -84,15 +165,17 @@ The direct scripts remain valid entrypoints for compatibility.
 - sets the X11 keyboard baseline to `us,ru` with `Win+Space`
 - enables linger for the target user when possible
 - optionally enables `NetworkManager`
+- enables Bluetooth service for Blueman when Bluetooth hardware is available
 - installs the Chrome dark-blue theme policy
 - optionally installs and enables LightDM packages from [`packages/pacman-lightdm.txt`](packages/pacman-lightdm.txt), the dark blue GTK greeter theme, and the wallpaper sync units
+- renders LightDM greeter sizing from [`home/.config/dotfiles/ui-sizes.env`](home/.config/dotfiles/ui-sizes.env)
 
 `bootstrap-user.sh`:
 - prompts for missing values in `.env`
 - backs up unmanaged target files that would conflict with Stow links
 - pulls Git LFS assets when `git-lfs` is installed
 - stows packages from [`packages/stow.txt`](packages/stow.txt)
-- generates local `~/.gitconfig` and GTK bookmarks from `.env`
+- generates local personal files and UI config files
 - bootstraps `yay` if needed
 - installs AUR packages from [`packages/aur.txt`](packages/aur.txt)
 - installs VPN Control from the latest `main` branch of `https://github.com/karapsin/vpn_control_android`
@@ -106,12 +189,19 @@ The direct scripts remain valid entrypoints for compatibility.
 - backs up unmanaged target files that would conflict with Stow links
 - pulls Git LFS assets when `git-lfs` is installed
 - stows packages from [`packages/stow.txt`](packages/stow.txt)
-- generates local `~/.gitconfig` and GTK bookmarks from `.env`
+- generates local personal files and UI config files
 - verifies executable bits for scripts used by the desktop config
 - enables the wallpaper timer when the user systemd manager is available
 - deploys the Chrome launcher and checks for the dark-blue theme policy
 - optionally enables linger and the LightDM wallpaper sync timer for the user
 - applies the custom XKB map immediately
+
+`sync-guest-user.sh`:
+- runs the light user bootstrap as the configured guest account
+- writes guest-safe bootstrap values under the target user's home directory
+- skips Git LFS fetches and immediate XKB application by default
+- applies graphical app defaults through a temporary D-Bus session when available
+- optionally enables linger and the LightDM wallpaper sync timer for the guest account
 
 ## Secrets And Machine-Specific State
 
@@ -144,6 +234,7 @@ Run the non-mutating validation script before committing bootstrap changes:
 
 `$mod` is `Mod4`, usually the Super/Windows key. `$mod+Space` is reserved for
 keyboard layout switching through the custom XKB setup.
+The `$mod+Shift+/` cheat sheet uses the same grouping order as the tables below.
 
 ### App Shortcuts
 
@@ -156,13 +247,14 @@ keyboard layout switching through the custom XKB setup.
 | `$mod+n` | Open Mousepad (like Windows Notepad) |
 | `$mod+Shift+s` | Start Flameshot screenshot selection (like Snipping Tool) |
 | `Print Screen` | Copy a full desktop screenshot to the clipboard with Flameshot |
+| `$mod+Shift+o` | Launch OBS Studio for screen recording |
 | `Ctrl+Shift+l` | Lock the screen with Betterlockscreen |
 | `$mod+c` | Launch Chrome through the dotfiles wrapper |
 | `$mod+g` | Launch Steam |
 | `$mod+t` | Launch Telegram |
 | `$mod+Shift+v` | Toggle VPN control |
-| `$mod+Alt+v` | Open PulseAudio volume control (like Volume Mixer) |
-| `$mod+Alt+b` | Open Blueman manager (like Bluetooth settings) |
+| `$mod+Alt+v` | Open PulseAudio volume control above Polybar (like Volume Mixer) |
+| `$mod+Alt+b` | Open Blueman manager above Polybar; Bluetooth tray left-click toggles the same popup (like Bluetooth settings) |
 | `$mod+Shift+t` | Launch Element |
 | `$mod+p` | Launch Positron through the dotfiles wrapper (like an RStudio or VS Code-style data IDE) |
 | `$mod+Shift+d` | Launch Drawing (like Windows Paint) |
@@ -173,7 +265,7 @@ keyboard layout switching through the custom XKB setup.
 | Shortcut | Action |
 | --- | --- |
 | `$mod+Shift+c` | Open the Polybar calendar popup |
-| `$mod+Shift+p` | Open the Polybar power menu |
+| `$mod+Shift+p` | Open the Polybar power menu above Polybar |
 
 ### i3 Action Shortcuts
 
@@ -194,4 +286,5 @@ keyboard layout switching through the custom XKB setup.
 | `$mod+h` / `$mod+v` | Split next container vertically or horizontally |
 | `$mod+s` / `$mod+w` / `$mod+e` | Use stacking, tabbed, or split layout |
 | `$mod+Shift+f` | Toggle floating mode for the focused window |
+| `$mod+Alt+a` | Toggle automatic tiling |
 | `$mod+a` | Focus parent container |

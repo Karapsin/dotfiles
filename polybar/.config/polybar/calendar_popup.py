@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import calendar
 import datetime as dt
+import os
 import sys
 
 import gi
@@ -11,6 +12,19 @@ from gi.repository import Gdk, Gtk
 
 
 DAYS = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+
+
+def env_int(name, default):
+    try:
+        value = int(os.environ.get(name, ""))
+        return value if value >= 0 else default
+    except ValueError:
+        return default
+
+
+def env_ui_int(name, default):
+    resolved_name = name.replace("DOTFILES_UI_", "DOTFILES_UI_RESOLVED_", 1)
+    return env_int(resolved_name, env_int(name, default))
 
 
 def add_class(widget, class_name):
@@ -52,7 +66,10 @@ class CalendarPopup(Gtk.Window):
         self.render()
 
     def build_header(self):
-        header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
+        header = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=env_ui_int("DOTFILES_UI_CALENDAR_HEADER_SPACING", 5),
+        )
         add_class(header, "polybar-calendar-header")
 
         prev_month = self.nav_button("<", self.shift_month, -1)
@@ -71,7 +88,7 @@ class CalendarPopup(Gtk.Window):
         header.pack_start(prev_month, False, False, 0)
         header.pack_start(self.month_label, True, True, 0)
         header.pack_start(next_month, False, False, 0)
-        header.pack_start(prev_year, False, False, 8)
+        header.pack_start(prev_year, False, False, env_ui_int("DOTFILES_UI_CALENDAR_YEAR_NAV_GAP", 8))
         header.pack_start(self.year_label, False, False, 0)
         header.pack_start(next_year, False, False, 0)
 

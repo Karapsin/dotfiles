@@ -6,7 +6,7 @@ ipc_socket = true
 TERM = "xterm-256color"
 
 [window]
-padding = { x = 6, y = 4 }
+padding = { x = @DOTFILES_UI_RESOLVED_ALACRITTY_PADDING_X@, y = @DOTFILES_UI_RESOLVED_ALACRITTY_PADDING_Y@ }
 dynamic_padding = true
 decorations_theme_variant = "Dark"
 resize_increments = true
@@ -14,11 +14,11 @@ opacity = 1.0
 dynamic_title = true
 
 [scrolling]
-history = 50000
-multiplier = 3
+history = @DOTFILES_UI_RESOLVED_ALACRITTY_SCROLL_HISTORY@
+multiplier = @DOTFILES_UI_RESOLVED_ALACRITTY_SCROLL_MULTIPLIER@
 
 [font]
-size = 14.0
+size = @DOTFILES_UI_RESOLVED_ALACRITTY_FONT_SIZE@
 builtin_box_drawing = true
 
 [colors]
