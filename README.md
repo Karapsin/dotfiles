@@ -274,7 +274,7 @@ The `$mod+Shift+/` cheat sheet uses the same grouping order as the tables below.
 | `$mod+1` through `$mod+0` | Switch to workspace 1 through 10 |
 | `$mod+Shift+1` through `$mod+Shift+0` | Move focused window to workspace 1 through 10 |
 | `$mod+h/j/k/l` or `$mod+arrow keys` | Move focus left/down/up/right |
-| `$mod+Shift+h/j/k/l` or `$mod+Shift+arrow keys` | Move the focused window left/down/up/right |
+| `$mod+Shift+h/j/k/l` or `$mod+Shift+arrow keys` | Swap the focused window left/down/up/right |
 | `$mod+f` | Toggle fullscreen |
 | `$mod+r` | Enter resize mode |
 | resize mode: `j/k/l/;` or arrow keys | Resize the focused window |

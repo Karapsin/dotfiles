@@ -190,9 +190,9 @@ generate_rows() {
     add_if_all '$mod+h/j/k/l or $mod+arrow keys' 'Move focus left/down/up/right' \
         '^[[:space:]]*bindsym[[:space:]]+\$mod\+h[[:space:]].*focus-visual\.py[[:space:]]+left' \
         '^[[:space:]]*bindsym[[:space:]]+\$mod\+Right[[:space:]].*focus-visual\.py[[:space:]]+right'
-    add_if_all '$mod+Shift+h/j/k/l or $mod+Shift+arrow keys' 'Move the focused window left/down/up/right' \
-        '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+h[[:space:]]+move[[:space:]]+left' \
-        '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+Right[[:space:]]+move[[:space:]]+right'
+    add_if_all '$mod+Shift+h/j/k/l or $mod+Shift+arrow keys' 'Swap the focused window left/down/up/right' \
+        '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+h[[:space:]].*swap-window\.py[[:space:]]+left' \
+        '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+Right[[:space:]].*swap-window\.py[[:space:]]+right'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+f[[:space:]]+fullscreen[[:space:]]+toggle' \
         '$mod+f' 'Toggle fullscreen'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+r[[:space:]]+mode[[:space:]]+"resize"' \
