@@ -17,6 +17,10 @@ MIN_WINDOW_HEIGHT="$(dotfiles_ui_resolved_positive_int DOTFILES_UI_VOLUME_MIN_WI
 EDGE_GAP="$(dotfiles_ui_resolved_int DOTFILES_UI_POPUP_EDGE_GAP)"
 BOTTOM_GAP="$(dotfiles_ui_resolved_int DOTFILES_UI_POPUP_BOTTOM_GAP)"
 PULSE_TRAY_WINDOW_NAME="PulseAudio system tray"
+PAVUCONTROL_BIN="${PAVUCONTROL_BIN:-$HOME/.local/bin/pavucontrol}"
+if [[ ! -x "$PAVUCONTROL_BIN" ]]; then
+  PAVUCONTROL_BIN=/usr/bin/pavucontrol
+fi
 
 max() {
   dotfiles_ui_max "$@"
@@ -141,9 +145,9 @@ open_pavucontrol_if_needed() {
   fi
 
   if command -v setsid >/dev/null 2>&1; then
-    setsid -f pavucontrol --tab=1 >/dev/null 2>&1
+    setsid -f "$PAVUCONTROL_BIN" --tab=1 >/dev/null 2>&1
   else
-    pavucontrol --tab=1 >/dev/null 2>&1 &
+    "$PAVUCONTROL_BIN" --tab=1 >/dev/null 2>&1 &
   fi
   for ((attempt = 0; attempt < 100; attempt++)); do
     sleep 0.02

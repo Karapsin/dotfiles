@@ -1,15 +1,57 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+PAVUCONTROL_GDK_DPI_SCALE="${PAVUCONTROL_GDK_DPI_SCALE:-}"
+PAVUCONTROL_GTK_CONFIG="${PAVUCONTROL_GTK_CONFIG:-$HOME/.config/pavucontrol-gtk}"
+PAVUCONTROL_RESOURCE_OVERLAY="${PAVUCONTROL_RESOURCE_OVERLAY:-$PAVUCONTROL_GTK_CONFIG/resource-overlay}"
+PAVUCONTROL_RUNTIME_CONFIG_HOME="${PAVUCONTROL_RUNTIME_CONFIG_HOME:-${XDG_RUNTIME_DIR:-$HOME/.cache}/dotfiles-pavucontrol}"
+
+prepare_pavucontrol_config() {
+  local source_gtk_dir="$PAVUCONTROL_GTK_CONFIG/gtk-4.0"
+  local target_gtk_dir="$PAVUCONTROL_RUNTIME_CONFIG_HOME/gtk-4.0"
+
+  [[ -r "$source_gtk_dir/gtk.css" && -r "$source_gtk_dir/settings.ini" ]] || return 1
+
+  mkdir -p "$target_gtk_dir"
+  if [[ -r "$HOME/.config/gtk-4.0/gtk.css" ]]; then
+    printf '@import url("file://%s/.config/gtk-4.0/gtk.css");\n\n' "$HOME" >"$target_gtk_dir/gtk.css"
+  else
+    : >"$target_gtk_dir/gtk.css"
+  fi
+  cat "$source_gtk_dir/gtk.css" >>"$target_gtk_dir/gtk.css"
+  ln -sfn "$source_gtk_dir/settings.ini" "$target_gtk_dir/settings.ini"
+
+  printf '%s\n' "$PAVUCONTROL_RUNTIME_CONFIG_HOME"
+}
+
+launch_pavucontrol() {
+  local config_home
+  local env_args=()
+  local resource_overlay=()
+
+  if [[ -r "$PAVUCONTROL_RESOURCE_OVERLAY/channelwidget.ui" && -r "$PAVUCONTROL_RESOURCE_OVERLAY/streamwidget.ui" ]]; then
+    resource_overlay=(G_RESOURCE_OVERLAYS="/org/pulseaudio/pavucontrol/ui=$PAVUCONTROL_RESOURCE_OVERLAY")
+  fi
+  if [[ -n "$PAVUCONTROL_GDK_DPI_SCALE" ]]; then
+    env_args+=(GDK_DPI_SCALE="$PAVUCONTROL_GDK_DPI_SCALE")
+  fi
+
+  if config_home="$(prepare_pavucontrol_config)"; then
+    exec env "${resource_overlay[@]}" "${env_args[@]}" XDG_CONFIG_HOME="$config_home" /usr/bin/pavucontrol "$@"
+  fi
+
+  exec env "${resource_overlay[@]}" "${env_args[@]}" /usr/bin/pavucontrol "$@"
+}
+
 for arg in "$@"; do
   case "$arg" in
     -h|--help|--help-*|-v|--version)
       exec /usr/bin/pavucontrol "$@"
       ;;
     -t|--tab|--tab=*)
-      exec /usr/bin/pavucontrol "$@"
+      launch_pavucontrol "$@"
       ;;
   esac
 done
 
-exec /usr/bin/pavucontrol --tab=1 "$@"
+launch_pavucontrol --tab=1 "$@"

@@ -12,7 +12,7 @@ source "$ui_helper"
 
 reboot_label=" reboot"
 poweroff_label=" poweroff"
-logout_label="logout"
+logout_label=" logout"
 screenshot_keys="Super+Shift+s,Super+S"
 cancel_keys="Escape,Control+g,Control+bracketleft,Super+Shift+p,Super+P"
 base_menu_width="$(dotfiles_ui_resolved_positive_int DOTFILES_UI_POWERMENU_BASE_WIDTH)"

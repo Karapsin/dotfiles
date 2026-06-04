@@ -162,7 +162,7 @@ generate_rows() {
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+v[[:space:]].*vpn-control-toggle\.sh' \
         '$mod+Shift+v' 'Toggle VPN control'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Mod1\+v[[:space:]].*launch-volume-control\.sh' \
-        '$mod+Alt+v' 'Open PulseAudio volume control above Polybar (like Volume Mixer)'
+        '$mod+Alt+v' 'Open or restore PulseAudio volume control above Polybar with sliders kept fitting (like Volume Mixer)'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Mod1\+b[[:space:]].*blueman-launch\.sh[[:space:]]+--manager' \
         '$mod+Alt+b' 'Open Blueman manager above Polybar (like Bluetooth settings)'
     add_if '^[[:space:]]*bindsym[[:space:]]+\$mod\+Shift\+t[[:space:]].*element-desktop' \

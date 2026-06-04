@@ -253,7 +253,7 @@ The `$mod+Shift+/` cheat sheet uses the same grouping order as the tables below.
 | `$mod+g` | Launch Steam |
 | `$mod+t` | Launch Telegram |
 | `$mod+Shift+v` | Toggle VPN control |
-| `$mod+Alt+v` | Open PulseAudio volume control above Polybar (like Volume Mixer) |
+| `$mod+Alt+v` | Open or restore PulseAudio volume control above Polybar with sliders kept fitting (like Volume Mixer) |
 | `$mod+Alt+b` | Open Blueman manager above Polybar; Bluetooth tray left-click toggles the same popup (like Bluetooth settings) |
 | `$mod+Shift+t` | Launch Element |
 | `$mod+p` | Launch Positron through the dotfiles wrapper (like an RStudio or VS Code-style data IDE) |
@@ -265,7 +265,7 @@ The `$mod+Shift+/` cheat sheet uses the same grouping order as the tables below.
 | Shortcut | Action |
 | --- | --- |
 | `$mod+Shift+c` | Open the Polybar calendar popup |
-| `$mod+Shift+p` | Open the Polybar power menu above Polybar |
+| `$mod+Shift+p` | Open the Polybar power menu above Polybar with logout, reboot, and poweroff options |
 
 ### i3 Action Shortcuts
 

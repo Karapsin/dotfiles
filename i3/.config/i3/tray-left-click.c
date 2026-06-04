@@ -166,6 +166,13 @@ static int window_has_class(Display *display, Window window, const char *target_
   return matches;
 }
 
+static int window_is_viewable(Display *display, Window window) {
+  XWindowAttributes attributes;
+
+  return XGetWindowAttributes(display, window, &attributes) != 0 &&
+         attributes.map_state == IsViewable;
+}
+
 static int window_has_atom_value(
   Display *display,
   Window window,
@@ -274,14 +281,14 @@ static Window find_matching_window(
   return found;
 }
 
-static Window find_class_window(Display *display, Window root, const char *target_class) {
+static Window find_viewable_class_window(Display *display, Window root, const char *target_class) {
   Window root_return = 0;
   Window parent_return = 0;
   Window *children = NULL;
   unsigned int child_count = 0;
   Window found = 0;
 
-  if (window_has_class(display, root, target_class)) {
+  if (window_has_class(display, root, target_class) && window_is_viewable(display, root)) {
     return root;
   }
 
@@ -290,7 +297,7 @@ static Window find_class_window(Display *display, Window root, const char *targe
   }
 
   for (unsigned int i = 0; i < child_count && found == 0; i++) {
-    found = find_class_window(display, children[i], target_class);
+    found = find_viewable_class_window(display, children[i], target_class);
   }
 
   if (children != NULL) {
@@ -363,7 +370,7 @@ static int managed_app_is_open(
   Window root,
   const struct tray_click_config *config
 ) {
-  return find_class_window(display, root, config->app_class) != 0;
+  return find_viewable_class_window(display, root, config->app_class) != 0;
 }
 
 static void run_command(const char *command) {

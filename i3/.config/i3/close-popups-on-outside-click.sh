@@ -132,9 +132,9 @@ toggle_bluetooth_manager() {
 close_targets_outside_point() {
   local click_x=$1
   local click_y=$2
-  local con_id rect_x rect_y rect_width rect_height rect_right rect_bottom
+  local con_id con_class rect_x rect_y rect_width rect_height rect_right rect_bottom
 
-  while IFS=$'\t' read -r con_id rect_x rect_y rect_width rect_height; do
+  while IFS=$'\t' read -r con_id con_class rect_x rect_y rect_width rect_height; do
     [[ -n "$con_id" ]] || continue
 
     rect_right=$((rect_x + rect_width))
@@ -144,15 +144,34 @@ close_targets_outside_point() {
       continue
     fi
 
-    i3-msg -q "[con_id=${con_id}] kill" >/dev/null 2>&1 || true
+    case "$con_class" in
+      pavucontrol)
+        i3-msg -q "[con_id=${con_id}] focus" >/dev/null 2>&1 &&
+          i3-msg -q scratchpad show >/dev/null 2>&1 || true
+        ;;
+      Blueman-manager)
+        i3-msg -q "[con_id=${con_id}] kill" >/dev/null 2>&1 || true
+        ;;
+    esac
   done < <(
     i3-msg -t get_tree |
       jq -r '
-        .. | objects
-        | select(.window? != null)
-        | select(.window_properties.class? == "pavucontrol" or .window_properties.class? == "Blueman-manager")
-        | [.id, .rect.x, .rect.y, .rect.width, .rect.height]
-        | @tsv
+        def visible_popups($in_scratch):
+          . as $node
+          | ($in_scratch or (.name? == "__i3_scratch")) as $next_in_scratch
+          | if
+              ($next_in_scratch | not) and
+              ($node.window? != null) and
+              ($node.window_properties.class? == "pavucontrol" or $node.window_properties.class? == "Blueman-manager")
+            then
+              [$node.id, $node.window_properties.class, $node.rect.x, $node.rect.y, $node.rect.width, $node.rect.height] | @tsv
+            else
+              empty
+            end,
+            (($node.nodes // [])[] | visible_popups($next_in_scratch)),
+            (($node.floating_nodes // [])[] | visible_popups($next_in_scratch));
+
+        visible_popups(false)
       '
   )
 }

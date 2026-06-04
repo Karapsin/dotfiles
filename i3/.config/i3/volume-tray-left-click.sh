@@ -8,7 +8,7 @@ cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/dotfiles"
 binary="$cache_dir/volume-tray-left-click"
 pid_file="${XDG_RUNTIME_DIR:-/tmp}/dotfiles-volume-tray-left-click.pid"
 open_command="$HOME/.config/i3/launch-volume-control.sh"
-close_command='i3-msg -q [class="^pavucontrol$"] kill'
+close_command='i3-msg -q [class="^pavucontrol$"] focus && i3-msg -q scratchpad show'
 
 if [[ -r "$pid_file" ]]; then
   old_pid="$(cat "$pid_file" 2>/dev/null || true)"
@@ -18,7 +18,15 @@ if [[ -r "$pid_file" ]]; then
   fi
 
   if [[ "$old_cmdline" == "$binary"* ]] && kill -0 "$old_pid" 2>/dev/null; then
-    exit 0
+    if [[ -x "$binary" && ! "$source_file" -nt "$binary" ]]; then
+      exit 0
+    fi
+
+    kill "$old_pid" 2>/dev/null || true
+    for _ in {1..20}; do
+      kill -0 "$old_pid" 2>/dev/null || break
+      sleep 0.05
+    done
   fi
 
   rm -f "$pid_file"

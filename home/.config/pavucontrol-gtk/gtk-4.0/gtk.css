@@ -1,0 +1,27 @@
+* {
+  min-width: 0;
+}
+
+button,
+menubutton,
+combobox,
+combobox *,
+dropdown,
+dropdown * {
+  min-width: 0;
+}
+
+button,
+menubutton,
+combobox,
+dropdown {
+  padding: 2px 4px;
+}
+
+button image {
+  -gtk-icon-size: 14px;
+}
+
+scale trough {
+  min-width: 32px;
+}
